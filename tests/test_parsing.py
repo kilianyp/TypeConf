@@ -1,6 +1,7 @@
 import pytest
 from typeconf.experiment import ExperimentBuilder
-from typeconf.model import UnetModel, ModelBuilder, DummyModel
+from pydantic import ValidationError
+from typeconf.model import UnetModelConfig, ModelBuilder, DummyModelConfig, UnetModel
 
 
 @pytest.fixture
@@ -44,15 +45,16 @@ def test_training(cfg):
 
 def test_unet_builder(unet_cfg):
     model_cfg = ModelBuilder().parse(unet_cfg)
-    assert isinstance(model_cfg, UnetModel)
+    assert isinstance(model_cfg, UnetModelConfig)
     assert model_cfg.num_classes == 1
+    model = model_cfg.build()
+    assert isinstance(model, UnetModel)
 
 def test_dummy_builder(dummy_cfg):
     model_cfg = ModelBuilder().parse(dummy_cfg)
-    assert isinstance(model_cfg, DummyModel)
+    assert isinstance(model_cfg, DummyModelConfig)
 
 
-from pydantic import ValidationError
 def test_missing_attribute():
     cfg = {"name": "dummy"}
     with pytest.raises(ValidationError):

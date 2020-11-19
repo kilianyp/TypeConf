@@ -3,36 +3,46 @@ from . import SelectBuilder
 from pydantic import FilePath
 
 
-class Model(BaseConfig):
+class ModelConfig(BaseConfig):
     name : str
     weights : FilePath
 
+    def build(self, *args, **kwargs):
+        model = self._build(*args, **kwargs)
+        # torch.load(cfg.weights)
+        return model
+
 
 class ModelBuilder(SelectBuilder):
-    def build(self, cfg):
-        model = self._build(cfg)
-        torch.load(cfg.weights)
+    pass
 
 
+class UnetModel(object):
+    def __init__(self, num_classes):
+        self.num_classes = num_classes
 
-class UnetModel(Model):
+
+class UnetModelConfig(ModelConfig):
     num_classes : int
+
+    def build(self):
+        return UnetModel(self.num_classes)
 
 
 @ModelBuilder.register('Unet')
 class UnetModelBuilder(ModelBuilder):
     def build_config(self, cfg):
-        return UnetModel
+        return UnetModelConfig
 
 
-class DummyModel(Model):
+class DummyModelConfig(ModelConfig):
     test : str
 
 
 @ModelBuilder.register('dummy')
 class DummyModelBuilder(ModelBuilder):
     def build_config(self, cfg):
-        return DummyModel
+        return DummyModelConfig
     def build(self, cfg):
         return cfg.test
 

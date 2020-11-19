@@ -24,3 +24,5 @@ print('\n\n')
 from typeconf.experiment import ExperimentBuilder
 experiment_cfg = ExperimentBuilder().parse(cfg)
 print(experiment_cfg.training)
+model_cfg = experiment_cfg.model 
+model = model_cfg.build()
