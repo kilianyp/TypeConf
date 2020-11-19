@@ -54,7 +54,6 @@ def test_dummy_builder(dummy_cfg):
     model_cfg = ModelConfig.parse(dummy_cfg)
     assert isinstance(model_cfg, DummyModelConfig)
 
-
 def test_missing_attribute():
     cfg = {"name": "dummy"}
     with pytest.raises(ValidationError):
