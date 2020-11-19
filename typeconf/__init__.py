@@ -1,6 +1,9 @@
 from collections import defaultdict
 from pydantic import BaseModel
 from typing import Dict
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class BaseConfig(BaseModel):
@@ -23,43 +26,39 @@ class BaseConfig(BaseModel):
     def find_unused(self):
         return set(self.__fields__.keys()) - set(self._field_access.keys())
 
+    @classmethod
+    def build_config(cls, *args, **kwargs):
+        return cls
 
-# bind together building object, building config and config object
-# folder pytorch
-# folder optimizer
-# how to subclass
-# select a specific class by name
-
-class BaseBuilder(object):
-    def build_config(self, cfg):
-        pass
-
-    def build_object(self, cfg, *args, **kwargs):
-        pass
-
-    def parse(self, cfg):
-        Model = self.build_config(cfg)
-        return Model(**cfg)
+    @classmethod
+    def parse(cls, cfg, *args, **kwargs):
+        cls = cls.build_config(cfg, *args, **kwargs)
+        return cls(**cfg)
 
 
-class SelectBuilder(BaseBuilder):
-    registered = {}
+class SelectConfig(BaseConfig):
+    name : str
 
     @classmethod
     def register(cls, name):
         def _register(cls):
-            cls.registered[name] = cls
+            cls._registered[name] = cls
+            logger.debug(cls._registered)
             return cls
         return _register
 
-    def build_config(self, cfg):
+    @classmethod
+    def build_config(cls, cfg):
         if 'name' not in cfg:
             raise ValueError("Select builder expects a config with name: %s", cfg)
 
         name = cfg['name']
-        cls = self.registered[name]
-        return cls().build_config(cfg)
+        cls = cls._registered[name]
+        return cls.build_config(cfg)
 
-    def build_object(self, cfg, *args, **kwargs):
+    def build(self, cfg, *args, **kwargs):
         raise RuntimeError("This method must be overwritten by selected option")
 
+# Work around. Cannot set it directly in the class, causes
+# "Cannot set member"
+SelectConfig._registered = {}
