@@ -1,6 +1,7 @@
 from . import SelectConfig
 from pydantic import FilePath
 from typing import Optional
+from abc import abstractmethod
 
 
 class ModelConfig(SelectConfig):
@@ -10,6 +11,10 @@ class ModelConfig(SelectConfig):
         model = self._build(*args, **kwargs)
         # torch.load(cfg.weights)
         return model
+
+    @abstractmethod
+    def _build(self, *args, **kwargs):
+        pass
 
 
 class UnetModel(object):
@@ -24,15 +29,9 @@ class UnetModelConfig(ModelConfig):
     def _build(self):
         return UnetModel(self.num_classes)
 
-    @classmethod
-    def build_config(cls, cfg):
-        return cls
-
-
 @ModelConfig.register('dummy')
 class DummyModelConfig(ModelConfig):
     test : str
 
-    @classmethod
-    def build_config(cls, cfg):
-        return cls
+    def _build(self):
+        return None

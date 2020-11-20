@@ -2,6 +2,7 @@ from collections import defaultdict
 from pydantic import BaseModel
 from typing import Dict
 import logging
+from abc import abstractmethod
 
 logger = logging.getLogger(__name__)
 
@@ -54,10 +55,15 @@ class SelectConfig(BaseConfig):
 
         name = cfg['name']
         cls = cls._registered[name]
-        return cls.build_config(cfg)
+        return cls._build_config(cfg)
 
+    @classmethod
+    def _build_config(cls, cfg):
+        return cls
+
+    @abstractmethod
     def build(self, cfg, *args, **kwargs):
-        raise RuntimeError("This method must be overwritten by selected option")
+        pass
 
 # Work around. Cannot set it directly in the class, causes
 # "Cannot set member"
