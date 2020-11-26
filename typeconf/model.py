@@ -29,6 +29,7 @@ class UnetModelConfig(ModelConfig):
     def _build(self):
         return UnetModel(self.num_classes)
 
+
 @ModelConfig.register('dummy')
 class DummyModelConfig(ModelConfig):
     test : str
