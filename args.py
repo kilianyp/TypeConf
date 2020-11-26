@@ -19,7 +19,13 @@ def fields2args(parser, fields, prefix=''):
             nargs = None
 
         if inspect.isclass(f.outer_type_) and issubclass(f.outer_type_, ArgConfig):
-            fields2args(parser, f.outer_type_.__fields__, f.name + '.')
+            # TODO add groups
+            fields2args(parser, f.outer_type_.__fields__, prefix + f.name + '.')
+            # TODO this is necessary because otherwise 
+            # when instantiating the sub config it will complain
+            # AttributeError: _parser
+            # ALternative would be that each class parses it's own arguments
+            f.outer_type_._parser = None
         else:
             parser.add_argument(f'--{prefix}{f.name}', default=f.default, nargs=nargs)
     return parser
@@ -42,9 +48,24 @@ class ArgConfig(BaseModel):
             # Here needs to be the priority
             # args over cfg
             # what about runtime arguments
-            # TODO deal with points
-            file_cfg.update(cli_args.__dict__)
-            # TODO update recursively
+
+            def args2dict(dic):
+                r = {}
+                for key, value in dic.items():
+                    depth = key.split('.')
+                    cur = r
+                    for idx, d in enumerate(depth):
+                        if idx == len(depth) - 1:
+                            cur[d] = value
+                        else:
+                            if d not in cur:
+                                cur[d] = {}
+                            cur = cur[d]
+                return r
+
+            r = args2dict(cli_args.__dict__)
+            file_cfg.update(r)
+            # TODO update fields individually
             file_cfg.update(kwargs)
             kwargs = file_cfg
         super().__init__(**kwargs)
@@ -54,14 +75,16 @@ class ArgConfig(BaseModel):
     def use_cli(cls):
         parser = argparse.ArgumentParser(cls.__name__)
         parser.add_argument('--config_path')
-        print(cls)
         cls._parser = fields2args(parser, cls.__fields__)
 
 
+# TODO test this
+class NestedNestedConfig(ArgConfig):
+    test : int
 
 class NestedConfig(ArgConfig):
     test : int
-
+    nested : NestedNestedConfig
 
 
 class TestConfig(ArgConfig):
