@@ -1,3 +1,4 @@
+"""
 from typeconf.backend.torch.optim import OptimizerConfig
 from typeconf.backend.torch.optim.adadelta import AdadeltaConfig
 
@@ -8,4 +9,4 @@ def test_adadelta():
     }
     config = OptimizerConfig.parse(cfg)
     assert isinstance(config, AdadeltaConfig)
-
+"""

@@ -65,12 +65,12 @@ class BaseConfig(BaseModel):
     https://github.com/samuelcolvin/pydantic/issues/2130
     """
     _field_access = defaultdict(int)
-    _parser = None
 
     class Config:
         underscore_attrs_are_private = True
 
     def __init__(self, **kwargs):
+        # TODO can we check if this was called without parse at first
         super().__init__(**kwargs)
 
 
@@ -90,7 +90,7 @@ class BaseConfig(BaseModel):
         return cls
 
     @classmethod
-    def parse(cls, *args, **kwargs):
+    def parse(cls, **kwargs):
         if cls._parser is not None:
             cli_args, unkown_args = cls._parser.parse_known_args()
             # file_cfg = read_cfg(cli_args.config_path)
@@ -126,6 +126,9 @@ class BaseConfig(BaseModel):
         parser = argparse.ArgumentParser(cls.__name__)
         parser.add_argument('--config_path')
         cls._parser = fields2args(parser, cls.__fields__)
+
+# TODO what happens when using multipe classes
+BaseConfig._parser = None
 
 
 class SelectConfig(BaseConfig):
