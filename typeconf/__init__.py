@@ -77,7 +77,20 @@ class BaseConfig(BaseModel):
         return super().__getattribute__(item)
 
     def get_stats(self) -> Dict[str, int]:
-        return dict(self._field_access)
+        stats = dict(self._field_access)
+
+        for name, field in self.__fields__.items():
+            # don't track
+            f = super().__getattribute__(name)
+            if isinstance(f, BaseConfig):
+                sub_stats = f.get_stats()
+                def flatten(d):
+                    for key, value in d.items():
+                        stats[field.name + '.' + key] = value
+                flatten(sub_stats)
+        return stats
+
+
 
     def find_unused(self):
         return set(self.__fields__.keys()) - set(self._field_access.keys())
