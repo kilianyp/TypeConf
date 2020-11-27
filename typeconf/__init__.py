@@ -9,7 +9,6 @@ from typing import List
 
 logger = logging.getLogger(__name__)
 
-
 def fields2args(parser, fields, prefix=''):
     """
     Avoids any parsing functionality --> all optional
@@ -72,8 +71,28 @@ class BaseConfig(BaseModel):
         underscore_attrs_are_private = True
 
     def __init__(self, **kwargs):
-        if self._parser is not None:
-            cli_args = self._parser.parse_args()
+        super().__init__(**kwargs)
+
+
+    def __getattribute__(self, item):
+        if not item.startswith('_') and item in self.__fields__:
+            self._field_access[item] += 1
+        return super().__getattribute__(item)
+
+    def get_stats(self) -> Dict[str, int]:
+        return dict(self._field_access)
+
+    def find_unused(self):
+        return set(self.__fields__.keys()) - set(self._field_access.keys())
+
+    @classmethod
+    def build_config(cls, *args, **kwargs):
+        return cls
+
+    @classmethod
+    def parse(cls, *args, **kwargs):
+        if cls._parser is not None:
+            cli_args, unkown_args = cls._parser.parse_known_args()
             # file_cfg = read_cfg(cli_args.config_path)
             file_cfg = {}
             # Here needs to be the priority
@@ -99,28 +118,8 @@ class BaseConfig(BaseModel):
             # TODO update fields individually
             file_cfg.update(kwargs)
             kwargs = file_cfg
-        super().__init__(**kwargs)
-
-
-    def __getattribute__(self, item):
-        if not item.startswith('_') and item in self.__fields__:
-            self._field_access[item] += 1
-        return super().__getattribute__(item)
-
-    def get_stats(self) -> Dict[str, int]:
-        return dict(self._field_access)
-
-    def find_unused(self):
-        return set(self.__fields__.keys()) - set(self._field_access.keys())
-
-    @classmethod
-    def build_config(cls, *args, **kwargs):
-        return cls
-
-    @classmethod
-    def parse(cls, cfg, *args, **kwargs):
-        cls = cls.build_config(cfg, *args, **kwargs)
-        return cls(**cfg)
+        cls = cls.build_config(kwargs)
+        return cls(**kwargs)
 
     @classmethod
     def use_cli(cls):
