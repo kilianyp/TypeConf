@@ -26,6 +26,16 @@ def fields2args(parser, fields, prefix=''):
         else:
             nargs = None
 
+        if f.outer_type_ == bool and f.default is not None:
+            if f.default:
+                action = 'store_false'
+            else:
+                action = 'store_true'
+        else:
+            action = None
+
+
+
         if inspect.isclass(f.outer_type_) and issubclass(f.outer_type_, BaseConfig):
             # TODO add groups
             fields2args(parser, f.outer_type_.__fields__, prefix + f.name + '.')
@@ -35,7 +45,19 @@ def fields2args(parser, fields, prefix=''):
             # ALternative would be that each class parses it's own arguments
             f.outer_type_._parser = None
         else:
-            parser.add_argument(f'--{prefix}{f.name}', default=f.default, nargs=nargs)
+            # TODO for required set special default value that can be ignored later
+            # to get later proper error value
+            if action is not None:
+                parser.add_argument(
+                        f'--{prefix}{f.name}',
+                        default=f.default,
+                        action=action)
+            else:
+                parser.add_argument(
+                        f'--{prefix}{f.name}',
+                        default=f.default,
+                        nargs=nargs)
+
     return parser
 
 
@@ -99,6 +121,7 @@ class BaseConfig(BaseModel):
     def parse(cls, cfg, *args, **kwargs):
         cls = cls.build_config(cfg, *args, **kwargs)
         return cls(**cfg)
+
     @classmethod
     def use_cli(cls):
         parser = argparse.ArgumentParser(cls.__name__)

@@ -69,6 +69,7 @@ def test_optional():
 class ListOptionalConfig(BaseConfig):
     test : Optional[List[int]]
 
+
 def test_optional_list_int():
     ListOptionalConfig.use_cli()
     with unittest.mock.patch('sys.argv', ["_"]):
@@ -80,3 +81,17 @@ def test_optional_list_int():
         cfg = ListOptionalConfig()
         assert cfg.test == [123, 456]
 
+
+class BoolConfig(BaseConfig):
+    flag_true : bool = False
+    flag_false: bool = True
+
+
+
+def test_bool_flag():
+    BoolConfig.use_cli()
+    testargs = ["_", "--flag_true", "--flag_false"]
+    with unittest.mock.patch('sys.argv', testargs):
+        cfg = BoolConfig()
+        assert cfg.flag_true
+        assert not cfg.flag_false
