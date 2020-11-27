@@ -5,7 +5,6 @@ from typing import Dict
 import logging
 from abc import abstractmethod
 import inspect
-from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +31,6 @@ def fields2args(parser, fields, prefix=''):
                 action = 'store_true'
         else:
             action = None
-
-
 
         if inspect.isclass(f.outer_type_) and issubclass(f.outer_type_, BaseConfig):
             # TODO add groups
