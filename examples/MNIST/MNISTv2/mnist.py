@@ -1,3 +1,6 @@
+"""
+Used https://github.com/pytorch/examples/blob/0f0c9131ca5c79d1332dce1f4c06fe942fbdc665/mnist/main.py as a startpoint.
+"""
 from __future__ import print_function
 import torch
 import torch.nn.functional as F
@@ -76,6 +79,7 @@ def test(model, device, test_loader):
 def main():
     MNISTConfig.use_cli()
     cfg = MNISTConfig.parse()
+    print(cfg)
 
     use_cuda = not cfg.no_cuda and torch.cuda.is_available()
     torch.manual_seed(cfg.seed)
