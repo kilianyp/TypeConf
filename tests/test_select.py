@@ -1,5 +1,5 @@
 from typeconf.model import UnetModelConfig, ModelConfig, DummyModelConfig, UnetModel
-from typeconf import BaseConfig
+from typeconf import BaseConfig, SelectConfig
 from typing import List, Tuple
 from pydantic import ValidationError, create_model
 import pytest
@@ -79,26 +79,76 @@ def test_unet_builder(unet_cfg):
     model = model_cfg.build()
     assert isinstance(model, UnetModel)
 
+
 def test_dummy_builder(dummy_cfg):
     model_cfg = ModelConfig.parse(**dummy_cfg)
     assert isinstance(model_cfg, DummyModelConfig)
+
 
 def test_missing_attribute():
     cfg = {"name": "dummy"}
     with pytest.raises(ValidationError):
         model_cfg = ModelConfig.parse(**cfg)
 
+
 def test_missing_name():
     cfg = {"weights": "dummy"}
     with pytest.raises(ValueError):
         model_cfg = ModelConfig.parse(**cfg)
+
 
 def test_missing_weights():
     cfg = {"name": "Unet", "weights": "dummy", "num_classes": 1}
     with pytest.raises(ValidationError):
         model_cfg = ModelConfig.parse(**cfg)
 
+
 def test_unknown_option():
     cfg = {"name": "unknown", "weights": "dummy", "num_classes": 1}
     with pytest.raises(ValueError):
         model_cfg = ModelConfig.parse(**cfg)
+
+
+class MasterConfig(SelectConfig):
+    pass
+MasterConfig._registered = SelectConfig._registered.copy()
+
+
+@MasterConfig.register('slave1')
+class Slave1Config(MasterConfig):
+    def build(self):
+        return
+
+
+@MasterConfig.register('Slave2')
+class Slave2Config(MasterConfig):
+    def build(self):
+        return
+
+
+def test_caseinsensitive():
+    slave1 = MasterConfig.build_config({'name': 'Slave1'})
+    slave2 = MasterConfig.build_config({'name': 'slave2'})
+    assert slave1 == Slave1Config
+    assert slave2 == Slave2Config
+
+
+def test_nooverwrite():
+    with pytest.raises(ValueError):
+        @MasterConfig.register('slave1')
+        class SlaveConfig(MasterConfig):
+            pass
+
+
+class Master2Config(SelectConfig):
+    def build(self):
+        return
+Master2Config._registered = SelectConfig._registered.copy()
+
+
+def test_differentnamespace():
+    @Master2Config.register('slave1')
+    class SlaveConfig(Master2Config):
+        pass
+    slave = Master2Config.build_config({'name': 'slave1'})
+    assert slave == SlaveConfig
