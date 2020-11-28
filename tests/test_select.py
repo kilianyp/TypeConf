@@ -139,6 +139,20 @@ def test_nooverwrite():
             pass
 
 
+class DynamicConfig(BaseConfig):
+    master : MasterConfig
+
+
+def test_dynamic_config():
+    cfg = DynamicConfig.parse(**{"master": {"name": "slave1"}})
+    assert isinstance(cfg.master, Slave1Config)
+
+
+def test_dynamic_fail_config():
+    with pytest.raises(ValueError):
+        cfg = DynamicConfig.parse()
+
+
 class Master2Config(SelectConfig):
     def build(self):
         return
@@ -150,3 +164,4 @@ def test_differentnamespace():
         pass
     slave = Master2Config.build_config({'name': 'slave1'})
     assert slave == SlaveConfig
+
