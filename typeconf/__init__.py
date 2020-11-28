@@ -10,6 +10,31 @@ import inspect
 logger = logging.getLogger(__name__)
 
 
+def args2dict(dic):
+    r = {}
+    for key, value in dic.items():
+        depth = key.split('.')
+        cur = r
+        for idx, d in enumerate(depth):
+            if idx == len(depth) - 1:
+                cur[d] = value
+            else:
+                if d not in cur:
+                    cur[d] = {}
+                cur = cur[d]
+    return r
+
+
+def list2dict(li):
+    dic = {}
+    for l in li:
+        if l.startswith('--'):
+            name = l[2:]
+        else:
+            dic[name] = l
+    return dic
+
+
 def fields2args(parser, fields, prefix='', in_select_class=False, choices=[]):
     """
     Avoids any parsing functionality --> all optional
@@ -138,46 +163,27 @@ class BaseConfig(BaseModel):
             return cls
 
     @classmethod
+    def _fill_in_from_cli(cls, kwargs):
+        cli_args, unknown_args = cls._parser.parse_known_args()
+        # file_cfg = read_cfg(cli_args.config_path)
+        file_cfg = {}
+        # Here needs to be the priority
+        # args over cfg
+        # what about runtime arguments
+        args = cli_args.__dict__
+        args.pop('config_path')
+        file_cfg.update(args2dict(args))
+        r = list2dict(unknown_args)
+        file_cfg.update(r)
+        # TODO update fields individually
+        file_cfg.update(kwargs)
+        kwargs = file_cfg
+        return kwargs
+
+    @classmethod
     def parse(cls, **kwargs):
         if cls._parser is not None:
-            cli_args, unknown_args = cls._parser.parse_known_args()
-            # file_cfg = read_cfg(cli_args.config_path)
-            file_cfg = {}
-            # Here needs to be the priority
-            # args over cfg
-            # what about runtime arguments
-
-            def args2dict(dic):
-                r = {}
-                for key, value in dic.items():
-                    depth = key.split('.')
-                    cur = r
-                    for idx, d in enumerate(depth):
-                        if idx == len(depth) - 1:
-                            cur[d] = value
-                        else:
-                            if d not in cur:
-                                cur[d] = {}
-                            cur = cur[d]
-                return r
-
-            def list2dict(li):
-                dic = {}
-                for l in li:
-                    if l.startswith('--'):
-                        name = l[2:]
-                    else:
-                        dic[name] = l
-                return dic
-
-            args = cli_args.__dict__
-            args.pop('config_path')
-            file_cfg.update(args2dict(args))
-            r = list2dict(unknown_args)
-            file_cfg.update(r)
-            # TODO update fields individually
-            file_cfg.update(kwargs)
-            kwargs = file_cfg
+            kwargs = cls._fill_in_from_cli(kwargs)
         cls = cls.build_config(kwargs)
         return cls(**kwargs)
 
