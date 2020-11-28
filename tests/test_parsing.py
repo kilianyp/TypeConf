@@ -3,6 +3,7 @@ import pytest
 
 class MasterConfig(SelectConfig):
     pass
+MasterConfig._registered = SelectConfig._registered.copy()
 
 
 @MasterConfig.register('slave1')
@@ -29,3 +30,16 @@ def test_nooverwrite():
         @MasterConfig.register('slave1')
         class SlaveConfig(MasterConfig):
             pass
+
+
+class Master2Config(SelectConfig):
+    pass
+Master2Config._registered = SelectConfig._registered.copy()
+
+
+def test_differentnamespace():
+    @Master2Config.register('slave1')
+    class SlaveConfig(Master2Config):
+        pass
+    slave = Master2Config.build_config({'name': 'slave1'})
+    assert slave == SlaveConfig
