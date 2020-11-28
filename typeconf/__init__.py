@@ -145,6 +145,8 @@ class SelectConfig(BaseConfig):
     @classmethod
     def register(cls, name):
         def _register(cls):
+            if name.lower() in cls._registered:
+                raise ValueError("%s has already been registered: %s" % (name, cls._registered[name]))
             cls._registered[name.lower()] = cls
             logger.debug(cls._registered)
             return cls
@@ -155,8 +157,9 @@ class SelectConfig(BaseConfig):
         if 'name' not in cfg:
             raise ValueError("Select builder expects a config with name: %s", cfg)
 
-        name = cfg['name']
-        cls = cls._registered[name.lower()]
+        name = cfg['name'].lower()
+
+        cls = cls._registered[name]
         return cls._build_config(cfg)
 
     @classmethod
