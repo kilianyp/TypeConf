@@ -1,12 +1,13 @@
 from collections import defaultdict
 import argparse
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra
 from typing import Dict
 import logging
 from abc import abstractmethod
 import inspect
 
 logger = logging.getLogger(__name__)
+
 
 def fields2args(parser, fields, prefix=''):
     """
@@ -65,11 +66,11 @@ class BaseConfig(BaseModel):
 
     class Config:
         underscore_attrs_are_private = True
+        extra = Extra.forbid
 
     def __init__(self, **kwargs):
         # TODO can we check if this was called without parse at first
         super().__init__(**kwargs)
-
 
     def __getattribute__(self, item):
         if not item.startswith('_') and item in self.__fields__:
@@ -121,7 +122,9 @@ class BaseConfig(BaseModel):
                             cur = cur[d]
                 return r
 
-            r = args2dict(cli_args.__dict__)
+            args = cli_args.__dict__
+            args.pop('config_path')
+            r = args2dict(args)
             file_cfg.update(r)
             # TODO update fields individually
             file_cfg.update(kwargs)
@@ -134,6 +137,7 @@ class BaseConfig(BaseModel):
         parser = argparse.ArgumentParser(cls.__name__)
         parser.add_argument('--config_path')
         cls._parser = fields2args(parser, cls.__fields__)
+
 
 # TODO what happens when using multipe classes
 BaseConfig._parser = None

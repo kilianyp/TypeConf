@@ -1,5 +1,7 @@
 from typeconf import SelectConfig
 import pytest
+from pydantic import ValidationError
+
 
 class MasterConfig(SelectConfig):
     pass
@@ -33,7 +35,9 @@ def test_nooverwrite():
 
 
 class Master2Config(SelectConfig):
-    pass
+    def build(self):
+        return
+
 Master2Config._registered = SelectConfig._registered.copy()
 
 
@@ -43,3 +47,9 @@ def test_differentnamespace():
         pass
     slave = Master2Config.build_config({'name': 'slave1'})
     assert slave == SlaveConfig
+
+def test_unknown():
+    with pytest.raises(ValidationError):
+        slave = Master2Config.parse(**{'name': 'slave1', "unknown": 123})
+
+
