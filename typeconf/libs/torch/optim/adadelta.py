@@ -16,7 +16,3 @@ class AdadeltaConfig(OptimizerConfig):
             eps=self.eps,
             weight_decay=self.weight_decay
         )
-
-    @classmethod
-    def build_config(cls, cfg):
-        return cls
