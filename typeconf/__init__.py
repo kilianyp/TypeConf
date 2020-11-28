@@ -10,7 +10,7 @@ import inspect
 logger = logging.getLogger(__name__)
 
 
-def fields2args(parser, fields, prefix=''):
+def fields2args(parser, fields, prefix='', in_select_class=False, choices=[]):
     """
     Avoids any parsing functionality --> all optional
 
@@ -35,9 +35,26 @@ def fields2args(parser, fields, prefix=''):
         else:
             action = None
 
-        if inspect.isclass(f.outer_type_) and issubclass(f.outer_type_, BaseConfig):
+        if in_select_class and key == "name":
+            parser.add_argument(
+                f'--{prefix}{f.name}',
+                default=f.default,
+                choices=choices
+            )
+        elif inspect.isclass(f.outer_type_) and issubclass(f.outer_type_, BaseConfig):
+            if issubclass(f.outer_type_, SelectConfig):
+                in_select_class = True
+                choices = list(f.outer_type_._registered.keys())
+            else:
+                in_select_class = False
+                choices = []
             # TODO add groups
-            fields2args(parser, f.outer_type_.__fields__, prefix + f.name + '.')
+            fields2args(
+                parser,
+                f.outer_type_.__fields__,
+                prefix + f.name + '.',
+                in_select_class,
+                choices=choices)
             # TODO this is necessary because otherwise
             # when instantiating the sub config it will complain
             # AttributeError: _parser
@@ -75,6 +92,7 @@ class BaseConfig(BaseModel):
 
     def __init__(self, **kwargs):
         # TODO can we check if this was called without parse at first
+        # TODO overwrite Metaclass
         super().__init__(**kwargs)
 
     def __getattribute__(self, item):
