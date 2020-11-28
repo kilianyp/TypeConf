@@ -111,7 +111,6 @@ def test_unknown_option():
 
 class MasterConfig(SelectConfig):
     pass
-MasterConfig._registered = SelectConfig._registered.copy()
 
 
 @MasterConfig.register('slave1')
@@ -143,7 +142,6 @@ def test_nooverwrite():
 class Master2Config(SelectConfig):
     def build(self):
         return
-Master2Config._registered = SelectConfig._registered.copy()
 
 
 def test_differentnamespace():

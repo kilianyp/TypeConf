@@ -1,7 +1,7 @@
 from collections import defaultdict
 import argparse
 from pydantic import BaseModel, Extra, create_model, ValidationError
-from typing import Dict
+from typing import Dict, ClassVar
 from abc import abstractmethod
 import logging
 import inspect
@@ -66,6 +66,9 @@ class BaseConfig(BaseModel):
     """
     _field_access = defaultdict(int)
 
+    # TODO what happens when using multipe classes
+    _parser : ClassVar = None
+
     class Config:
         underscore_attrs_are_private = True
         extra = Extra.forbid
@@ -104,6 +107,7 @@ class BaseConfig(BaseModel):
                 if key not in cfg:
                     raise ValidationError()
                 config = f.outer_type_.build_config(cfg[key])
+                # pydantic needs the ellipsis
                 dynamic_configs[key] = (config, ...)
 
         if len(dynamic_configs) > 0:
@@ -166,15 +170,19 @@ class BaseConfig(BaseModel):
         cls._parser = fields2args(parser, cls.__fields__)
 
 
-# TODO what happens when using multipe classes
-BaseConfig._parser = None
-
-
 class SelectConfig(BaseConfig):
     name : str
+    _registered : ClassVar[Dict] = None
 
     @classmethod
     def register(cls, name):
+        """
+        Register a config.
+        Namespace is per class.
+        """
+        if cls._registered is None:
+            cls._registered = {}
+
         def _register(cls):
             if name.lower() in cls._registered:
                 raise ValueError("%s has already been registered: %s" % (name, cls._registered[name]))
@@ -203,8 +211,3 @@ class SelectConfig(BaseConfig):
     @abstractmethod
     def build(self, cfg, *args, **kwargs):
         pass
-
-
-# Work around. Cannot set it directly in the class, causes
-# "Cannot set member"
-SelectConfig._registered = {}

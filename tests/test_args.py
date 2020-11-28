@@ -103,7 +103,6 @@ def test_bool_flag():
 
 class MasterConfig(SelectConfig):
     pass
-MasterConfig._registered = SelectConfig._registered.copy()
 
 
 @MasterConfig.register('slave1')
