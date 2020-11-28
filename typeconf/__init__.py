@@ -90,8 +90,6 @@ class BaseConfig(BaseModel):
                 flatten(sub_stats)
         return stats
 
-
-
     def find_unused(self):
         return set(self.__fields__.keys()) - set(self._field_access.keys())
 
@@ -147,7 +145,7 @@ class SelectConfig(BaseConfig):
     @classmethod
     def register(cls, name):
         def _register(cls):
-            cls._registered[name] = cls
+            cls._registered[name.lower()] = cls
             logger.debug(cls._registered)
             return cls
         return _register
@@ -158,7 +156,7 @@ class SelectConfig(BaseConfig):
             raise ValueError("Select builder expects a config with name: %s", cfg)
 
         name = cfg['name']
-        cls = cls._registered[name]
+        cls = cls._registered[name.lower()]
         return cls._build_config(cfg)
 
     @classmethod
