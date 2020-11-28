@@ -6,7 +6,7 @@ class LRSchedulerConfig(SelectConfig):
 
 
 @LRSchedulerConfig.register("step_lr")
-class StepLRConfig(SelectConfig):
+class StepLRConfig(LRSchedulerConfig):
     gamma : float = 0.1
     last_epoch : int = -1
     verbose : bool = False
@@ -20,7 +20,3 @@ class StepLRConfig(SelectConfig):
             last_epoch=self.last_epoch,
             verbose=self.verbose
         )
-
-    @classmethod
-    def build_config(cls, cfg):
-        return cls
