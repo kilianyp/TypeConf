@@ -191,6 +191,8 @@ class SelectConfig(BaseConfig):
 
         name = cfg['name'].lower()
 
+        if name not in cls._registered:
+            raise ValueError("Unknown option for %s: %s" % (cls.__name__, cfg['name']))
         cls = cls._registered[name]
         return cls._build_config(cfg)
 

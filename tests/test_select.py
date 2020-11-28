@@ -97,3 +97,8 @@ def test_missing_weights():
     cfg = {"name": "Unet", "weights": "dummy", "num_classes": 1}
     with pytest.raises(ValidationError):
         model_cfg = ModelConfig.parse(**cfg)
+
+def test_unknown_option():
+    cfg = {"name": "unknown", "weights": "dummy", "num_classes": 1}
+    with pytest.raises(ValueError):
+        model_cfg = ModelConfig.parse(**cfg)
