@@ -110,13 +110,15 @@ class BaseConfig(BaseModel):
 
     # TODO what happens when using multipe classes
     _parser : ClassVar = None
+    _initialized : ClassVar[bool] = False
 
     class Config:
         underscore_attrs_are_private = True
         extra = Extra.forbid
 
     def __init__(self, **kwargs):
-        # TODO can we check if this was called without parse at first
+        if not self._initialized:
+            logger.warning("Please use parse method to instantiate")
         # TODO overwrite Metaclass
         super().__init__(**kwargs)
 
@@ -185,6 +187,7 @@ class BaseConfig(BaseModel):
         if cls._parser is not None:
             kwargs = cls._fill_in_from_cli(kwargs)
         cls = cls.build_config(kwargs)
+        cls._initialized = True
         return cls(**kwargs)
 
     @classmethod
