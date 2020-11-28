@@ -1,10 +1,11 @@
 from collections import defaultdict
 import argparse
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, create_model, ValidationError
 from typing import Dict
-import logging
 from abc import abstractmethod
+import logging
 import inspect
+
 
 logger = logging.getLogger(__name__)
 
@@ -96,8 +97,23 @@ class BaseConfig(BaseModel):
         return set(self.__fields__.keys()) - set(self._field_access.keys())
 
     @classmethod
-    def build_config(cls, *args, **kwargs):
-        return cls
+    def build_config(cls, cfg):
+        dynamic_configs = {}
+        for key, f in cls.__fields__.items():
+            if inspect.isclass(f.outer_type_) and issubclass(f.outer_type_, SelectConfig):
+                if key not in cfg:
+                    raise ValidationError()
+                config = f.outer_type_.build_config(cfg[key])
+                dynamic_configs[key] = (config, ...)
+
+        if len(dynamic_configs) > 0:
+            return create_model(
+                cls.__name__,
+                __base__=cls,
+                **dynamic_configs
+            )
+        else:
+            return cls
 
     @classmethod
     def parse(cls, **kwargs):
@@ -125,7 +141,6 @@ class BaseConfig(BaseModel):
 
             def list2dict(li):
                 dic = {}
-
                 for l in li:
                     if l.startswith('--'):
                         name = l[2:]
@@ -186,6 +201,7 @@ class SelectConfig(BaseConfig):
     @abstractmethod
     def build(self, cfg, *args, **kwargs):
         pass
+
 
 # Work around. Cannot set it directly in the class, causes
 # "Cannot set member"

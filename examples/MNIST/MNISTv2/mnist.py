@@ -25,31 +25,16 @@ class MNISTModelConfig(ModelConfig):
 class MNISTConfig(BaseConfig):
     batch_size: int = 64
     test_batch_size: int = 1000
-    epochs : int = 14
-    no_cuda : bool = False
-    dry_run : bool = False
-    seed : int = 1
-    log_interval : int = 10
-    save_model : bool = True
-    gamma : float = 0.7
-    model : MNISTModelConfig
-    optimizer : MNISTOptimizerConfig
-    lr_scheduler : MNISTLRSchedulerConfig
-
-
-    @classmethod
-    def build_config(cls, cfg):
-        from pydantic import create_model
-        model = MNISTModelConfig.build_config(cfg['model'])
-        optimizer = MNISTOptimizerConfig.build_config(cfg['optimizer'])
-        lr_scheduler = MNISTLRSchedulerConfig.build_config(cfg['lr_scheduler'])
-        return create_model(
-            'MNISTConfig',
-            model=(model, ...),
-            optimizer=(optimizer, ...),
-            lr_scheduler=(lr_scheduler, ...),
-            __base__=cls
-        )
+    epochs: int = 14
+    no_cuda: bool = False
+    dry_run: bool = False
+    seed: int = 1
+    log_interval: int = 10
+    save_model: bool = True
+    gamma: float = 0.7
+    model: MNISTModelConfig
+    optimizer: MNISTOptimizerConfig
+    lr_scheduler: MNISTLRSchedulerConfig
 
 
 def train(args, model, device, train_loader, optimizer, epoch):
@@ -111,10 +96,10 @@ def main():
         transforms.Normalize((0.1307,), (0.3081,))
         ])
     dataset1 = datasets.MNIST('..', train=True, download=True,
-                       transform=transform)
+                              transform=transform)
     dataset2 = datasets.MNIST('..', train=False,
-                       transform=transform)
-    train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
+                              transform=transform)
+    train_loader = torch.utils.data.DataLoader(dataset1, **train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
 
     model = cfg.model.build()
