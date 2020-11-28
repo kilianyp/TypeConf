@@ -15,6 +15,7 @@ def fields2args(parser, fields, prefix=''):
 
     args:
         fields: Pydantic fields
+        parser: ArgumentParser
     """
     for key, f in fields.items():
         # TODO check for annotation
@@ -101,7 +102,7 @@ class BaseConfig(BaseModel):
     @classmethod
     def parse(cls, **kwargs):
         if cls._parser is not None:
-            cli_args, unkown_args = cls._parser.parse_known_args()
+            cli_args, unknown_args = cls._parser.parse_known_args()
             # file_cfg = read_cfg(cli_args.config_path)
             file_cfg = {}
             # Here needs to be the priority
@@ -122,9 +123,20 @@ class BaseConfig(BaseModel):
                             cur = cur[d]
                 return r
 
+            def list2dict(li):
+                dic = {}
+
+                for l in li:
+                    if l.startswith('--'):
+                        name = l[2:]
+                    else:
+                        dic[name] = l
+                return dic
+
             args = cli_args.__dict__
             args.pop('config_path')
-            r = args2dict(args)
+            file_cfg.update(args2dict(args))
+            r = list2dict(unknown_args)
             file_cfg.update(r)
             # TODO update fields individually
             file_cfg.update(kwargs)
@@ -158,8 +170,9 @@ class SelectConfig(BaseConfig):
 
     @classmethod
     def build_config(cls, cfg):
-        if 'name' not in cfg:
-            raise ValueError("Select builder expects a config with name: %s", cfg)
+        name = cfg.get('name')
+        if name is None:
+            raise ValueError("Select builder expects a config with name set: %s" % cfg)
 
         name = cfg['name'].lower()
 

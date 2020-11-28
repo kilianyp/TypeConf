@@ -1,6 +1,8 @@
-from typeconf import BaseConfig
+from typeconf import BaseConfig, SelectConfig
 import unittest.mock
 from typing import Optional, List
+from pydantic import ValidationError
+import pytest
 
 
 class NestedNestedConfig(BaseConfig):
@@ -97,3 +99,34 @@ def test_bool_flag():
         cfg = BoolConfig.parse()
         assert cfg.flag_true
         assert not cfg.flag_false
+
+
+class MasterConfig(SelectConfig):
+    pass
+
+
+@MasterConfig.register('slave')
+class SlaveConfig(MasterConfig):
+    test : int
+    def build(self):
+        pass
+
+
+def test_select_args():
+    MasterConfig.use_cli()
+    testargs = ["_", "--test", "3"]
+    with unittest.mock.patch('sys.argv', testargs):
+        cfg = MasterConfig.parse(**{'name': 'slave'})
+        assert cfg.test == 3
+
+
+class UnknownConfig(BaseConfig):
+    pass
+
+
+def test_unknown():
+    UnknownConfig.use_cli()
+    testargs = ["_", "--flag", "1"]
+    with unittest.mock.patch('sys.argv', testargs):
+        with pytest.raises(ValidationError):
+            cfg = UnknownConfig.parse()
