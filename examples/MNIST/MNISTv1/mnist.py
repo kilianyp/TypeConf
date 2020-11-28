@@ -9,9 +9,6 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 from torch import nn
-
-import sys
-sys.path = ['../'] + sys.path
 from typeconf import BaseConfig
 
 
@@ -92,7 +89,7 @@ def test(model, device, test_loader):
 
 def main():
     MNISTConfig.use_cli()
-    cfg = MNISTConfig()
+    cfg = MNISTConfig.parse()
 
     use_cuda = not cfg.no_cuda and torch.cuda.is_available()
     torch.manual_seed(cfg.seed)
