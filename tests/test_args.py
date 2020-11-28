@@ -103,9 +103,10 @@ def test_bool_flag():
 
 class MasterConfig(SelectConfig):
     pass
+MasterConfig._registered = SelectConfig._registered.copy()
 
 
-@MasterConfig.register('slave')
+@MasterConfig.register('slave1')
 class SlaveConfig(MasterConfig):
     test : int
     def build(self):
@@ -113,11 +114,26 @@ class SlaveConfig(MasterConfig):
 
 
 def test_select_args():
-    MasterConfig.use_cli()
     testargs = ["_", "--test", "3"]
     with unittest.mock.patch('sys.argv', testargs):
-        cfg = MasterConfig.parse(**{'name': 'slave'})
+        MasterConfig.use_cli()
+        cfg = MasterConfig.parse(**{'name': 'slave1'})
         assert cfg.test == 3
+
+
+@MasterConfig.register('slave2')
+class SlaveConfig(MasterConfig):
+    test : List[int]
+    def build(self):
+        pass
+
+
+def test_select_list_args():
+    testargs = ["_", "--test", "3", "4"]
+    with unittest.mock.patch('sys.argv', testargs):
+        MasterConfig.use_cli()
+        cfg = MasterConfig.parse(**{'name': 'slave2'})
+        assert cfg.test == ["3", "4"]
 
 
 class UnknownConfig(BaseConfig):
@@ -130,3 +146,14 @@ def test_unknown():
     with unittest.mock.patch('sys.argv', testargs):
         with pytest.raises(ValidationError):
             cfg = UnknownConfig.parse()
+
+    testargs = ["_", "--flag", "1", "2"]
+    with unittest.mock.patch('sys.argv', testargs):
+        with pytest.raises(ValidationError):
+            cfg = UnknownConfig.parse()
+
+    testargs = ["_", "--flag"]
+    with unittest.mock.patch('sys.argv', testargs):
+        with pytest.raises(ValidationError):
+            cfg = UnknownConfig.parse()
+

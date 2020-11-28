@@ -1,14 +1,25 @@
 from typeconf.model import UnetModelConfig, ModelConfig, DummyModelConfig, UnetModel
 from typeconf import BaseConfig
-from typing import Tuple
-from pydantic import ValidationError
+from typing import List, Tuple
+from pydantic import ValidationError, create_model
 import pytest
 
 
 def test_multi_select():
     class MultiModel(BaseConfig):
         models : Tuple[UnetModelConfig, DummyModelConfig]
-        # models : List[ModelConfig]
+        """
+        models : List[ModelConfig]
+        def build_config(self, cfg):
+            models = []
+            for model_cfg in cfg['models']:
+                models.append(ModelConfig.build_config(model_cfg))
+            # TODO how to create Tuple type dynamically
+            tuple_type = make_tuple_type(models)
+            return create_model(
+                "MultiModel",
+                models=(tuple_type, ...)
+        """
 
     cfg = {
         "models": [
@@ -25,7 +36,6 @@ def test_multi_select():
     config = MultiModel.parse(**cfg)
     assert isinstance(config.models[0], UnetModelConfig)
     assert isinstance(config.models[1], DummyModelConfig)
-
 
 
 @pytest.fixture
