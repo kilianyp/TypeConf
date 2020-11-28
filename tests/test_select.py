@@ -1,13 +1,42 @@
-from typeconf.model import UnetModelConfig, ModelConfig, DummyModelConfig, UnetModel
 from typeconf import BaseConfig, SelectConfig
 from typing import List, Tuple
 from pydantic import ValidationError, create_model
 import pytest
 
 
+class MasterConfig(SelectConfig):
+    pass
+
+
+@MasterConfig.register('option1')
+class Option1Config(MasterConfig):
+    def build(self):
+        return
+
+
+@MasterConfig.register('Option2')
+class Option2Config(MasterConfig):
+    def build(self):
+        return
+
+
+def basic_test():
+    slave1 = MasterConfig.parse(**{'name': 'option1'})
+    slave2 = MasterConfig.parse(**{'name': 'Option2'})
+    assert isinstance(slave1, Option1Config)
+    assert isinstance(slave2, Option2Config)
+
+
+def test_caseinsensitive():
+    slave1 = MasterConfig.build_config({'name': 'Option1'})
+    slave2 = MasterConfig.build_config({'name': 'option2'})
+    assert slave1 == Option1Config
+    assert slave2 == Option2Config
+
+
 def test_multi_select():
     class MultiModel(BaseConfig):
-        models : Tuple[UnetModelConfig, DummyModelConfig]
+        models : Tuple[Option1Config, Option2Config]
         """
         models : List[ModelConfig]
         def build_config(self, cfg):
@@ -24,117 +53,45 @@ def test_multi_select():
     cfg = {
         "models": [
             {
-                "name": "Unet",
-                "num_classes": 0
+                "name": "option1",
             },
             {
-                "name": "dummy",
-                "test": 1
+                "name": "option2",
             }
         ]
     }
     config = MultiModel.parse(**cfg)
-    assert isinstance(config.models[0], UnetModelConfig)
-    assert isinstance(config.models[1], DummyModelConfig)
-
-
-@pytest.fixture
-def unet_cfg():
+    assert isinstance(config.models[0], Option1Config)
+    assert isinstance(config.models[1], Option2Config)
     cfg = {
-        "name": "Unet",
-        "num_classes": 1,
-        "weights": "tests/mock_weights.pt",
-    }
-    return cfg
-
-
-@pytest.fixture
-def dummy_cfg():
-    cfg = {
-        "name": "dummy",
-        "weights": "tests/mock_weights.pt",
-        "test": 1
-    }
-    return cfg
-
-
-@pytest.fixture
-def cfg(unet_cfg):
-    cfg = {
-        "model": unet_cfg,
-        "training": {
-            "optimizer": {
-                "name": "adagrad"
+        "models": [
+            {
+                "name": "option1",
             },
-            "max_steps": 30,
-        },
+            {
+                "name": "optionXYZ",
+            }
+        ]
     }
-    return cfg
-
-
-def test_unet_builder(unet_cfg):
-    model_cfg = ModelConfig.parse(**unet_cfg)
-    assert isinstance(model_cfg, UnetModelConfig)
-    assert model_cfg.num_classes == 1
-    model = model_cfg.build()
-    assert isinstance(model, UnetModel)
-
-
-def test_dummy_builder(dummy_cfg):
-    model_cfg = ModelConfig.parse(**dummy_cfg)
-    assert isinstance(model_cfg, DummyModelConfig)
-
-
-def test_missing_attribute():
-    cfg = {"name": "dummy"}
-    with pytest.raises(ValidationError):
-        model_cfg = ModelConfig.parse(**cfg)
+    with pytest.raises(ValueError):
+        config = MultiModel.parse(**cfg)
 
 
 def test_missing_name():
-    cfg = {"weights": "dummy"}
+    cfg = {"test": "dummy"}
     with pytest.raises(ValueError):
-        model_cfg = ModelConfig.parse(**cfg)
-
-
-def test_missing_weights():
-    cfg = {"name": "Unet", "weights": "dummy", "num_classes": 1}
-    with pytest.raises(ValidationError):
-        model_cfg = ModelConfig.parse(**cfg)
+        MasterConfig.parse(**cfg)
 
 
 def test_unknown_option():
-    cfg = {"name": "unknown", "weights": "dummy", "num_classes": 1}
+    cfg = {"name": "unknown"}
     with pytest.raises(ValueError):
-        model_cfg = ModelConfig.parse(**cfg)
-
-
-class MasterConfig(SelectConfig):
-    pass
-
-
-@MasterConfig.register('slave1')
-class Slave1Config(MasterConfig):
-    def build(self):
-        return
-
-
-@MasterConfig.register('Slave2')
-class Slave2Config(MasterConfig):
-    def build(self):
-        return
-
-
-def test_caseinsensitive():
-    slave1 = MasterConfig.build_config({'name': 'Slave1'})
-    slave2 = MasterConfig.build_config({'name': 'slave2'})
-    assert slave1 == Slave1Config
-    assert slave2 == Slave2Config
+        MasterConfig.parse(**cfg)
 
 
 def test_nooverwrite():
     with pytest.raises(ValueError):
-        @MasterConfig.register('slave1')
+        @MasterConfig.register('option1')
         class SlaveConfig(MasterConfig):
             pass
 
@@ -144,8 +101,8 @@ class DynamicConfig(BaseConfig):
 
 
 def test_dynamic_config():
-    cfg = DynamicConfig.parse(**{"master": {"name": "slave1"}})
-    assert isinstance(cfg.master, Slave1Config)
+    cfg = DynamicConfig.parse(**{"master": {"name": "option1"}})
+    assert isinstance(cfg.master, Option1Config)
 
 
 def test_dynamic_fail_config():
@@ -159,9 +116,9 @@ class Master2Config(SelectConfig):
 
 
 def test_differentnamespace():
-    @Master2Config.register('slave1')
-    class SlaveConfig(Master2Config):
+    @Master2Config.register('option1')
+    class OptionConfig(Master2Config):
         pass
-    slave = Master2Config.build_config({'name': 'slave1'})
-    assert slave == SlaveConfig
+    slave = Master2Config.build_config({'name': 'option1'})
+    assert slave == OptionConfig
 
