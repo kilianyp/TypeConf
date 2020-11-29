@@ -77,8 +77,8 @@ def test(model, device, test_loader):
 
 
 def main():
-    MNISTConfig.use_cli()
-    cfg = MNISTConfig.parse()
+    kwargs = MNISTConfig.parse_cli_args()
+    cfg = MNISTConfig(**kwargs)
     print(cfg)
 
     use_cuda = not cfg.no_cuda and torch.cuda.is_available()

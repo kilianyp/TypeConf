@@ -14,7 +14,7 @@ def test_adadelta(params):
     cfg = {
         "name": "Adadelta"
     }
-    config = OptimizerConfig.parse(**cfg)
+    config = OptimizerConfig(**cfg)
     assert isinstance(config, AdadeltaConfig)
     optimizer = config.build(params)
     assert isinstance(optimizer, Adadelta)
@@ -23,7 +23,7 @@ def test_adagrad(params):
     cfg = {
         "name": "Adagrad"
     }
-    config = OptimizerConfig.parse(**cfg)
+    config = OptimizerConfig(**cfg)
     assert isinstance(config, AdagradConfig)
     optimizer = config.build(params)
     assert isinstance(optimizer, Adagrad)

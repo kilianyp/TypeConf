@@ -128,17 +128,18 @@ class BaseConfig(BaseModel):
 
     # TODO what happens when using multipe classes
     _parser : ClassVar = None
-    _initialized : ClassVar[bool] = False
 
     class Config:
         underscore_attrs_are_private = True
         extra = Extra.forbid
 
     def __init__(self, **kwargs):
-        if not self._initialized:
-            logger.warning("Please use parse method to instantiate")
-        # TODO overwrite Metaclass
         super().__init__(**kwargs)
+
+    def __new__(cls, **kwargs):
+        cls = cls.build_config(kwargs)
+        obj = super().__new__(cls)
+        return obj
 
     def __getattribute__(self, item):
         if not item.startswith('_') and item in self.__fields__:
@@ -183,41 +184,26 @@ class BaseConfig(BaseModel):
             return cls
 
     @classmethod
-    def _fill_in_from_cli(cls, kwargs):
+    def parse_cli_args(cls):
+        if cls._parser is None:
+            parser = argparse.ArgumentParser(cls.__name__)
+            parser.add_argument('--config_path')
+            cls._parser = fields2args(parser, cls.__fields__)
         cli_args, unknown_args = cls._parser.parse_known_args()
         args = cli_args.__dict__
         config_path = args.pop('config_path')
 
         if config_path is not None:
-            file_cfg = read_file_cfg(config_path)
+            kwargs = read_file_cfg(config_path)
         else:
-            file_cfg = {}
+            kwargs = {}
 
         # Here needs to be the priority
         # args over cfg
-        # what about runtime arguments
-        file_cfg.update(args2dict(args))
+        kwargs.update(args2dict(args))
         r = list2dict(unknown_args)
-        file_cfg.update(r)
-
-        # TODO update fields individually
-        file_cfg.update(kwargs)
-        kwargs = file_cfg
+        kwargs.update(r)
         return kwargs
-
-    @classmethod
-    def parse(cls, **kwargs):
-        if cls._parser is not None:
-            kwargs = cls._fill_in_from_cli(kwargs)
-        cls = cls.build_config(kwargs)
-        cls._initialized = True
-        return cls(**kwargs)
-
-    @classmethod
-    def use_cli(cls):
-        parser = argparse.ArgumentParser(cls.__name__)
-        parser.add_argument('--config_path')
-        cls._parser = fields2args(parser, cls.__fields__)
 
 
 class SelectConfig(BaseConfig):

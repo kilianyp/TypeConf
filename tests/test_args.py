@@ -20,9 +20,9 @@ class TestConfig(BaseConfig):
 
 def test_nested():
     testargs = ["_", "--nested.test", "123", "--nested.nested.test", "456"]
-    TestConfig.use_cli()
     with unittest.mock.patch('sys.argv', testargs):
-        cfg = TestConfig.parse()
+        kwargs = TestConfig.parse_cli_args()
+        cfg = TestConfig(**kwargs)
         assert cfg.nested.test == 123
         assert cfg.nested.nested.test == 456
 
@@ -33,17 +33,17 @@ class ListConfig(BaseConfig):
 
 def test_list_1param():
     testargs = ["_", "--test", "123"]
-    ListConfig.use_cli()
     with unittest.mock.patch('sys.argv', testargs):
-        cfg = ListConfig.parse()
+        kwargs = ListIntConfig.parse_cli_args()
+        cfg = ListConfig(**kwargs)
         assert cfg.test == ["123"]
 
 
 def test_list_2param():
     testargs = ["_", "--test", "123", "456"]
-    ListConfig.use_cli()
     with unittest.mock.patch('sys.argv', testargs):
-        cfg = ListConfig.parse()
+        kwargs = ListIntConfig.parse_cli_args()
+        cfg = ListConfig(**kwargs)
         assert cfg.test == ["123", "456"]
 
 
@@ -53,9 +53,9 @@ class ListIntConfig(BaseConfig):
 
 def test_list_int():
     testargs = ["_", "--test", "123", "456"]
-    ListIntConfig.use_cli()
     with unittest.mock.patch('sys.argv', testargs):
-        cfg = ListIntConfig.parse()
+        kwargs = ListIntConfig.parse_cli_args()
+        cfg = ListIntConfig(**kwargs)
         assert cfg.test == [123, 456]
 
 
@@ -65,9 +65,9 @@ class OptionalConfig(BaseConfig):
 
 def test_optional():
     testargs = ["_"]
-    OptionalConfig.use_cli()
     with unittest.mock.patch('sys.argv', testargs):
-        cfg = OptionalConfig.parse()
+        kwargs = OptionalConfig.parse_cli_args()
+        cfg = OptionalConfig(**kwargs)
         assert cfg.test is None
 
 
@@ -76,14 +76,15 @@ class ListOptionalConfig(BaseConfig):
 
 
 def test_optional_list_int():
-    ListOptionalConfig.use_cli()
     with unittest.mock.patch('sys.argv', ["_"]):
-        cfg = ListOptionalConfig.parse()
-        cfg.test == []
+        kwargs = ListOptionalConfig.parse_cli_args()
+        cfg = ListOptionalConfig(**kwargs)
+        assert cfg.test is None
 
     testargs = ["_", "--test", "123", "456"]
     with unittest.mock.patch('sys.argv', testargs):
-        cfg = ListOptionalConfig.parse()
+        kwargs = ListOptionalConfig.parse_cli_args()
+        cfg = ListOptionalConfig(**kwargs)
         assert cfg.test == [123, 456]
 
 
@@ -93,10 +94,10 @@ class BoolConfig(BaseConfig):
 
 
 def test_bool_flag():
-    BoolConfig.use_cli()
     testargs = ["_", "--flag_true", "--flag_false"]
     with unittest.mock.patch('sys.argv', testargs):
-        cfg = BoolConfig.parse()
+        kwargs = BoolConfig.parse_cli_args()
+        cfg = BoolConfig(**kwargs)
         assert cfg.flag_true
         assert not cfg.flag_false
 
@@ -115,8 +116,9 @@ class SlaveConfig(MasterConfig):
 def test_select_args():
     testargs = ["_", "--test", "3"]
     with unittest.mock.patch('sys.argv', testargs):
-        MasterConfig.use_cli()
-        cfg = MasterConfig.parse(**{'name': 'slave1'})
+        kwargs = MasterConfig.parse_cli_args()
+        kwargs.update({'name': 'slave1'})
+        cfg = MasterConfig(**kwargs)
         assert cfg.test == 3
 
 
@@ -130,8 +132,9 @@ class SlaveConfig(MasterConfig):
 def test_select_list_args():
     testargs = ["_", "--test", "3", "4"]
     with unittest.mock.patch('sys.argv', testargs):
-        MasterConfig.use_cli()
-        cfg = MasterConfig.parse(**{'name': 'slave2'})
+        kwargs = MasterConfig.parse_cli_args()
+        kwargs.update({'name': 'slave2'})
+        cfg = MasterConfig(**kwargs)
         assert cfg.test == ["3", "4"]
 
 
@@ -140,19 +143,21 @@ class UnknownConfig(BaseConfig):
 
 
 def test_unknown():
-    UnknownConfig.use_cli()
     testargs = ["_", "--flag", "1"]
     with unittest.mock.patch('sys.argv', testargs):
         with pytest.raises(ValidationError):
-            cfg = UnknownConfig.parse()
+            kwargs = UnknownConfig.parse_cli_args()
+            cfg = UnknownConfig(**kwargs)
 
     testargs = ["_", "--flag", "1", "2"]
     with unittest.mock.patch('sys.argv', testargs):
         with pytest.raises(ValidationError):
-            cfg = UnknownConfig.parse()
+            kwargs = UnknownConfig.parse_cli_args()
+            cfg = UnknownConfig(**kwargs)
 
     testargs = ["_", "--flag"]
     with unittest.mock.patch('sys.argv', testargs):
         with pytest.raises(ValidationError):
-            cfg = UnknownConfig.parse()
+            kwargs = UnknownConfig.parse_cli_args()
+            cfg = UnknownConfig(**kwargs)
 

@@ -6,7 +6,7 @@ class Config(BaseConfig):
 
 
 def test_simple():
-    cfg = Config.parse()
+    cfg = Config()
     cfg.test
     stats = cfg.get_stats()
     assert stats['test'] == 1
@@ -17,7 +17,7 @@ class Config2(BaseConfig):
 
 
 def test_nested():
-    cfg = Config2.parse(**{"nested": {}})
+    cfg = Config2(**{"nested": {}})
     cfg.nested.test
     stats = cfg.get_stats()
     assert stats['nested'] == 1
@@ -34,7 +34,7 @@ class Config3(BaseConfig):
 
 
 def test_nested2():
-    cfg = Config3.parse(**{"nested": {"nested": {}}})
+    cfg = Config3(**{"nested": {"nested": {}}})
     cfg.nested.nested.test
     stats = cfg.get_stats()
     assert stats['nested.nested.test'] == 1
@@ -46,7 +46,7 @@ class Config4(BaseConfig):
 
 
 def test_ununsed():
-    cfg = Config4.parse()
+    cfg = Config4()
     unused = cfg.find_unused()
     assert unused == {'test1', 'test2'}
     cfg.test1

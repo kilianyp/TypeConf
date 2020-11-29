@@ -21,8 +21,8 @@ class Option2Config(MasterConfig):
 
 
 def basic_test():
-    slave1 = MasterConfig.parse(**{'name': 'option1'})
-    slave2 = MasterConfig.parse(**{'name': 'Option2'})
+    slave1 = MasterConfig(**{'name': 'option1'})
+    slave2 = MasterConfig(**{'name': 'Option2'})
     assert isinstance(slave1, Option1Config)
     assert isinstance(slave2, Option2Config)
 
@@ -60,7 +60,7 @@ def test_multi_select():
             }
         ]
     }
-    config = MultiModel.parse(**cfg)
+    config = MultiModel(**cfg)
     assert isinstance(config.models[0], Option1Config)
     assert isinstance(config.models[1], Option2Config)
     cfg = {
@@ -74,19 +74,19 @@ def test_multi_select():
         ]
     }
     with pytest.raises(ValueError):
-        config = MultiModel.parse(**cfg)
+        config = MultiModel(**cfg)
 
 
 def test_missing_name():
     cfg = {"test": "dummy"}
     with pytest.raises(ValueError):
-        MasterConfig.parse(**cfg)
+        MasterConfig(**cfg)
 
 
 def test_unknown_option():
     cfg = {"name": "unknown"}
     with pytest.raises(ValueError):
-        MasterConfig.parse(**cfg)
+        MasterConfig(**cfg)
 
 
 def test_nooverwrite():
@@ -101,13 +101,13 @@ class DynamicConfig(BaseConfig):
 
 
 def test_dynamic_config():
-    cfg = DynamicConfig.parse(**{"master": {"name": "option1"}})
+    cfg = DynamicConfig(**{"master": {"name": "option1"}})
     assert isinstance(cfg.master, Option1Config)
 
 
 def test_dynamic_fail_config():
     with pytest.raises(ValueError):
-        cfg = DynamicConfig.parse()
+        cfg = DynamicConfig()
 
 
 class Master2Config(SelectConfig):
