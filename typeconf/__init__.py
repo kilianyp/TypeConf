@@ -102,6 +102,24 @@ def fields2args(parser, fields, prefix='', in_select_class=False, choices=[]):
     return parser
 
 
+def read_file_cfg(path):
+    if path.endswith('.json'):
+        import json
+        with open(path, 'r') as f:
+            return json.load(f)
+    if path.endswith('.yaml'):
+        # TODO requires extra dependency
+        raise NotImplementedError
+    if path.endswith('.py'):
+        content = open(path).read()
+        # https://stackoverflow.com/questions/1463306/how-does-exec-work-with-locals
+        ldict = {}
+        exec(content, globals(), ldict)
+        return ldict['cfg']
+
+    raise ValueError("Unknown file format %s" % path)
+
+
 class BaseConfig(BaseModel):
     """
     https://github.com/samuelcolvin/pydantic/issues/2130
@@ -167,16 +185,21 @@ class BaseConfig(BaseModel):
     @classmethod
     def _fill_in_from_cli(cls, kwargs):
         cli_args, unknown_args = cls._parser.parse_known_args()
-        # file_cfg = read_cfg(cli_args.config_path)
-        file_cfg = {}
+        args = cli_args.__dict__
+        config_path = args.pop('config_path')
+
+        if config_path is not None:
+            file_cfg = read_file_cfg(config_path)
+        else:
+            file_cfg = {}
+
         # Here needs to be the priority
         # args over cfg
         # what about runtime arguments
-        args = cli_args.__dict__
-        args.pop('config_path')
         file_cfg.update(args2dict(args))
         r = list2dict(unknown_args)
         file_cfg.update(r)
+
         # TODO update fields individually
         file_cfg.update(kwargs)
         kwargs = file_cfg
