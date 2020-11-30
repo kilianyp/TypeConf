@@ -219,15 +219,15 @@ class SelectConfig(BaseConfig):
         if cls._registered is None:
             cls._registered = {}
 
-        def _register(cls):
-            if cls._registered is None:
-                raise RuntimeError("Make sure to inherit from register class")
+        def _register(obj):
+            if not issubclass(obj, cls):
+                raise RuntimeError("Please inherit from the parent config class")
 
             if name.lower() in cls._registered:
                 raise ValueError("%s has already been registered: %s" % (name, cls._registered[name]))
-            cls._registered[name.lower()] = cls
+            cls._registered[name.lower()] = obj
             logger.debug(cls._registered)
-            return cls
+            return obj
         return _register
 
     @classmethod

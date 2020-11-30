@@ -122,3 +122,25 @@ def test_differentnamespace():
     slave = Master2Config.build_config({'name': 'option1'})
     assert slave == OptionConfig
 
+
+def test_wrongparent():
+    with pytest.raises(RuntimeError):
+        class ParentConfig(SelectConfig):
+            pass
+
+        @ParentConfig.register('child')
+        class ChildConfig(BaseConfig):
+            def build(self):
+                pass
+
+
+    with pytest.raises(RuntimeError):
+        class Parent1Config(SelectConfig):
+            pass
+        class Parent2Config(SelectConfig):
+            pass
+
+        @Parent1Config.register('child')
+        class ChildConfig(Parent2Config):
+            def build(self):
+                pass
