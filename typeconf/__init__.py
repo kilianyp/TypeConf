@@ -211,7 +211,7 @@ class SelectConfig(BaseConfig):
     _registered : ClassVar[Dict] = None
 
     @classmethod
-    def register(cls, name):
+    def register(cls, *names):
         """
         Register a config.
         Namespace is per class.
@@ -220,12 +220,13 @@ class SelectConfig(BaseConfig):
             cls._registered = {}
 
         def _register(obj):
-            if not issubclass(obj, cls):
+            if obj.__bases__ != (cls, ):
                 raise RuntimeError("Please inherit from the parent config class")
 
-            if name.lower() in cls._registered:
-                raise ValueError("%s has already been registered: %s" % (name, cls._registered[name]))
-            cls._registered[name.lower()] = obj
+            for name in names:
+                if name.lower() in cls._registered:
+                    raise ValueError("%s has already been registered: %s" % (name, cls._registered[name]))
+                cls._registered[name.lower()] = obj
             logger.debug(cls._registered)
             return obj
         return _register

@@ -124,6 +124,9 @@ def test_differentnamespace():
 
 
 def test_wrongparent():
+    """
+    Throwing error as soon as possible
+    """
     with pytest.raises(RuntimeError):
         class ParentConfig(SelectConfig):
             pass
@@ -144,3 +147,50 @@ def test_wrongparent():
         class ChildConfig(Parent2Config):
             def build(self):
                 pass
+
+    with pytest.raises(RuntimeError):
+        class Parent1Config(SelectConfig):
+            pass
+        class Parent2Config(Parent1Config):
+            pass
+
+        @Parent1Config.register('child')
+        class ChildConfig(Parent2Config):
+            def build(self):
+                pass
+
+
+@pytest.mark.xfail(reason='Not implemented')
+def test_subclass():
+    """
+    TODO is this even relevant?
+    """
+    class Parent1Config(SelectConfig):
+        pass
+    class Parent2Config(Parent1Config):
+        pass
+
+    @Parent1Config.register('child')
+    class ChildConfig(Parent1Config):
+        def build(self):
+            pass
+
+    @Parent2Config.register('child')
+    class ChildConfig(Parent2Config):
+        def build(self):
+            pass
+
+
+def test_alias():
+    class ParentConfig(SelectConfig):
+        pass
+    @ParentConfig.register('child1', 'child2')
+    class ChildConfig(ParentConfig):
+        def build(self):
+            pass
+    cls = ParentConfig.build_config({'name': 'child1'})
+    assert cls == ChildConfig
+    cls = ParentConfig.build_config({'name': 'child2'})
+    assert cls == ChildConfig
+
+
