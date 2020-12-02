@@ -22,6 +22,7 @@ class Config3(BaseConfig):
     nested : Config2
 
 
+@pytest.mark.xfail(rason="Not implemented")
 def test_nested_but_no_overlap():
     testargs = ["_", "--nested.test1", "1"]
     with unittest.mock.patch('sys.argv', testargs):

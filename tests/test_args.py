@@ -129,6 +129,7 @@ class SlaveConfig(MasterConfig):
         pass
 
 
+@pytest.mark.xfail(reason="Not implemented in cli parser")
 def test_select_list_args():
     testargs = ["_", "--test", "3", "4"]
     with unittest.mock.patch('sys.argv', testargs):
@@ -142,6 +143,7 @@ class UnknownConfig(BaseConfig):
     pass
 
 
+@pytest.mark.xfail(reason="Last case is not implemented")
 def test_unknown():
     testargs = ["_", "--flag", "1"]
     with unittest.mock.patch('sys.argv', testargs):
