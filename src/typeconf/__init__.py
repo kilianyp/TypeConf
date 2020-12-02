@@ -253,3 +253,7 @@ class SelectConfig(BaseConfig):
     @abstractmethod
     def build(self, cfg, *args, **kwargs):
         pass
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions

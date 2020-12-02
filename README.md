@@ -53,7 +53,7 @@ class2 inherits from class2, should they have a separate or joined namespace. Se
 does not need a build method?
 
 ## CI/CD
-- [ ] versioneer
+- [x] versioneer
 - [ ] Automatic testing on push
 - [ ] black?
 - [ ] push to pypi
