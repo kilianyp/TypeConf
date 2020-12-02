@@ -220,8 +220,10 @@ class SelectConfig(BaseConfig):
             cls._registered = {}
 
         def _register(obj):
+            if not inspect.isclass(obj):
+                raise RuntimeError("Only supporting classes")
             if obj.__bases__ != (cls, ):
-                raise RuntimeError("Please inherit from the parent config class")
+                raise RuntimeError("Please inherit and register from the parent config class")
 
             for name in names:
                 if name.lower() in cls._registered:
