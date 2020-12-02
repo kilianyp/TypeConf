@@ -1,4 +1,5 @@
-# TypeConf
+#
+TypeConf
 
 The goal of this library is to help developers build more robust systems for
 academia as well as industry by avoiding configuration errors.
@@ -26,6 +27,8 @@ pip install -e .
 
 ## Examples
 - MNIST
+### Demo
+- examples/Demo.ipynb
 
 
 # TODO
