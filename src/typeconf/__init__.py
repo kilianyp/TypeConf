@@ -185,11 +185,15 @@ class BaseConfig(BaseModel):
             return cls
 
     @classmethod
+    def _create_parser(cls):
+        parser = argparse.ArgumentParser(cls.__name__)
+        parser.add_argument('--config_path')
+        return fields2args(parser, cls.__fields__)
+
+    @classmethod
     def parse_cli_args(cls):
         if cls._parser is None:
-            parser = argparse.ArgumentParser(cls.__name__)
-            parser.add_argument('--config_path')
-            cls._parser = fields2args(parser, cls.__fields__)
+            cls._parser = cls._create_parser()
         cli_args, unknown_args = cls._parser.parse_known_args()
         args = cli_args.__dict__
         config_path = args.pop('config_path')
