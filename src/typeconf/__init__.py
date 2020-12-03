@@ -5,6 +5,7 @@ from typing import Dict, ClassVar
 from abc import abstractmethod
 import logging
 import inspect
+from typing import Tuple
 
 
 logger = logging.getLogger(__name__)
@@ -206,12 +207,17 @@ class BaseConfig(BaseModel):
         return kwargs
 
 
+def all_lower(string):
+    return string.lower()
+
+
 class SelectConfig(BaseConfig):
     name : str
     _registered : ClassVar[Dict] = None
+    _sanitize_fn : ClassVar[callable] = all_lower
 
     @classmethod
-    def register(cls, *names):
+    def register(cls, *names : Tuple[str]):
         """
         Register a config.
         Namespace is per class.
@@ -226,9 +232,9 @@ class SelectConfig(BaseConfig):
                 raise RuntimeError("Please inherit and register from the parent config class")
 
             for name in names:
-                if name.lower() in cls._registered:
+                if cls._sanitize_fn(name) in cls._registered:
                     raise ValueError("%s has already been registered: %s" % (name, cls._registered[name]))
-                cls._registered[name.lower()] = obj
+                cls._registered[cls._sanitize_fn(name)] = obj
             logger.debug(cls._registered)
             return obj
         return _register
@@ -239,7 +245,7 @@ class SelectConfig(BaseConfig):
         if name is None:
             raise ValueError("Select builder expects a config with name set: %s" % cfg)
 
-        name = cfg['name'].lower()
+        name = cls._sanitize_fn(cfg['name'])
 
         if name not in cls._registered:
             raise ValueError("Unknown option for %s: %s" % (cls.__name__, cfg['name']))
