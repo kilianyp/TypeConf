@@ -1,14 +1,16 @@
-#
-TypeConf
+# TypeConf
 
 The goal of this library is to help developers build more robust systems for
 academia as well as industry by avoiding configuration errors.
 
+This is achieved by providing a library to build dynamic but typesafe configurations.
+
 
 ## Features
 - Configuration checking through pydantic
-- Better visibility which parameters were used and which not
 - Super simple integration of alternatives for ablation studies
+- Automatic CLI generation
+- Better visibility which parameters were used and which not
 - Testing of existing configurations to help maintain them
 
 
