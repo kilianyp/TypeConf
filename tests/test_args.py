@@ -5,6 +5,40 @@ from pydantic import ValidationError
 import pytest
 
 
+class ConfigOptional(BaseConfig):
+    test : int = 1
+    test2 : Optional[int]
+
+
+def test_optional():
+    testargs = ["_", "--test", 2]
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = ConfigOptional.parse_cli_args()
+        cfg = ConfigOptional(**kwargs)
+        assert cfg.test == 2
+
+    testargs = ["_", "--test2", 2]
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = ConfigOptional.parse_cli_args()
+        cfg = ConfigOptional(**kwargs)
+        assert cfg.test2 == 2
+
+
+class ConfigPositional(BaseConfig):
+    test1 : int
+    test2 : int
+
+
+@pytest.mark.xfail
+def test_positional():
+    testargs = ["_", "1", "2"]
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = ConfigOptional.parse_cli_args()
+        cfg = ConfigOptional(**kwargs)
+        assert cfg.test1 == 1
+        assert cfg.test2 == 2
+
+
 class NestedNestedConfig(BaseConfig):
     test : int
 

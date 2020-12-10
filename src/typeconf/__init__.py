@@ -28,10 +28,13 @@ def args2dict(dic):
 
 def list2dict(li):
     dic = {}
+    name = None
     for l in li:
         if l.startswith('--'):
             name = l[2:]
         else:
+            if name is None:
+                raise NotImplementedError("Positional arguments are not supported. Please use --")
             dic[name] = l
     return dic
 
