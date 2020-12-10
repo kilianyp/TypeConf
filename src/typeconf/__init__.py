@@ -12,8 +12,18 @@ logger = logging.getLogger(__name__)
 
 
 def args2dict(dic):
+    """
+    Converts a dict with keys such as KEY1.KEY2 = VALUE
+    Into a nested dict
+    Filters out unset values
+    """
+
+    UNSET_VALUE = None
+
     r = {}
     for key, value in dic.items():
+        if value is UNSET_VALUE:
+            continue
         depth = key.split('.')
         cur = r
         for idx, d in enumerate(depth):
@@ -107,12 +117,13 @@ def fields2args(parser, fields, prefix='', in_select_class=False, choices=[]):
 
 
 def read_file_cfg(path):
-    if path.endswith('.json'):
+    if path.endswith('.json') or path.endswith('.cfg'):
         import json
         with open(path, 'r') as f:
             return json.load(f)
     if path.endswith('.yaml'):
         # TODO requires extra dependency
+        # TODO maybe use omegaconf
         raise NotImplementedError
     if path.endswith('.py'):
         content = open(path).read()

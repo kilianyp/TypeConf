@@ -3,6 +3,8 @@ import unittest.mock
 from typing import Optional, List
 from pydantic import ValidationError
 import pytest
+import json
+import os
 
 
 class ConfigOptional(BaseConfig):
@@ -197,3 +199,65 @@ def test_unknown():
             kwargs = UnknownConfig.parse_cli_args()
             cfg = UnknownConfig(**kwargs)
 
+
+def test_config_path(tmp_path):
+    class NestedConfig(BaseConfig):
+        test : int
+
+    class NestedConfig2(BaseConfig):
+        test : int = 1
+
+
+
+    class Config(BaseConfig):
+        nested : NestedConfig
+        nested2 : NestedConfig2
+
+    config = {
+        "nested" : {
+            "test": 1
+        }
+    }
+
+    path =  os.path.join(tmp_path, 'config.json')
+    with open(path, 'w') as f:
+        json.dump(config, f)
+
+    testargs = ["_", '--config_path', path]
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = Config.parse_cli_args()
+        cfg = Config(**kwargs)
+        assert cfg.nested.test == 1
+        assert cfg.nested2.test == 1
+
+    testargs = ["_", '--config_path', path, '--nested.test', '2', '--nested2.test', '2']
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = Config.parse_cli_args()
+        cfg = Config(**kwargs)
+        assert cfg.nested.test == 2
+        assert cfg.nested2.test == 2
+
+
+@pytest.mark.xfail(reason="Default args in config parser overwrite config")
+def test_overwrite_default_from_config(tmp_path):
+    class NestedConfig(BaseConfig):
+        test : int = 1
+
+    class Config(BaseConfig):
+        nested : NestedConfig
+
+    config = {
+        "nested" : {
+            "test": 2
+        }
+    }
+
+    path = os.path.join(tmp_path, 'config.json')
+    with open(path, 'w') as f:
+        json.dump(config, f)
+
+    testargs = ["_", '--config_path', path]
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = Config.parse_cli_args()
+        cfg = Config(**kwargs)
+        assert cfg.nested.test == 2
