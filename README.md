@@ -19,6 +19,19 @@ This is achieved by providing a library to build dynamic but typesafe configurat
 - Tracking of which configuration parameters were used and which not
 - Easy and structured way to run ablation studies
 
+## Config Priority
+There are multiple ways to set a value in the configuration.
+Conflicts are resolved in the following order (sorted in ascending order).
+
+0. Declaration Default (These should avoided in the first place and should always
+be overwritten by the configuration)
+1. Config Default
+2. Set as preset (either through cli or in config file)
+3. Set through config file
+4. Set through CLI
+5. Set in code before parsing
+6. Set in code after parsing (Can be prohibited by using pydantics (Faux Imutablility)[https://pydantic-docs.helpmanual.io/usage/models/#faux-immutability]
+This is meant to reflect most common use cases.
 
 ## Installation
 ```python
