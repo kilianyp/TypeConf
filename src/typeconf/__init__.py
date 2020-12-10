@@ -125,6 +125,8 @@ class BaseConfig(BaseModel):
     """
     https://github.com/samuelcolvin/pydantic/issues/2130
     """
+    preset : str = ""
+
     _field_access = defaultdict(int)
 
     # TODO what happens when using multipe classes
@@ -138,9 +140,23 @@ class BaseConfig(BaseModel):
         super().__init__(**kwargs)
 
     def __new__(cls, **kwargs):
+        # TODO priority, what about keyword args?
+        cls.set_presets(kwargs)
         cls = cls.build_config(kwargs)
         obj = super().__new__(cls)
         return obj
+
+    @classmethod
+    def set_presets(cls, kwargs):
+        for key, value in kwargs.items():
+            if key == 'preset':
+                if value == "unet_pretrained":
+                    kwargs['name'] = "unet"
+                    kwargs['weights'] = "local"
+                    break
+
+            elif isinstance(value, dict):
+                cls.set_presets(value)
 
     def __getattribute__(self, item):
         if not item.startswith('_') and item in self.__fields__:
@@ -197,7 +213,7 @@ class BaseConfig(BaseModel):
         cli_args, unknown_args = cls._parser.parse_known_args()
         args = cli_args.__dict__
         config_path = args.pop('config_path')
-
+        # TODO make this explicit?
         if config_path is not None:
             kwargs = read_file_cfg(config_path)
         else:
