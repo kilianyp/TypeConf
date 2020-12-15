@@ -135,6 +135,24 @@ def read_file_cfg(path):
     raise ValueError("Unknown file format %s" % path)
 
 
+def partial_dict_update(dict1, dict2):
+    """
+    dict1 is updated with dict2
+
+    Args:
+        dict1 (dict)
+        dict2 (dict)
+    """
+    for key, value in dict2.items():
+        if key in dict1:
+            if isinstance(dict1[key], dict) and isinstance(value, dict):
+                partial_dict_update(dict1[key], value)
+            else:
+                dict1[key] = value
+        else:
+            dict1[key] = value
+
+
 class BaseConfig(BaseModel):
     """
     https://github.com/samuelcolvin/pydantic/issues/2130
@@ -219,9 +237,8 @@ class BaseConfig(BaseModel):
 
         # Here needs to be the priority
         # args over cfg
-        kwargs.update(args2dict(args))
-        r = list2dict(unknown_args)
-        kwargs.update(r)
+        partial_dict_update(kwargs, args2dict(args))
+        partial_dict_update(kwargs, list2dict(unknown_args))
         return kwargs
 
 
