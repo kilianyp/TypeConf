@@ -37,16 +37,6 @@ class ListAction(Action):
         return value
 
 
-class StoreTrueAction(Action):
-    def __call__(self, value):
-        return True
-
-
-class StoreFalseAction(Action):
-    def __call__(self, value):
-        return False
-
-
 class Parser(object):
     def __init__(self,
                  prefix_chars='-'):
@@ -66,10 +56,6 @@ class Parser(object):
             self._actions[action_name] = DefaultAction(action_name)
         elif type == 'list':
             self._actions[action_name] = ListAction(action_name)
-        elif type == 'store_true':
-            self._actions[action_name] = StoreTrueAction(action_name)
-        elif type == 'store_false':
-            self._actions[action_name] = StoreFalseAction(action_name)
         else:
             raise ValueError(f'Unknown type {type}')
 
