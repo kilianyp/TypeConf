@@ -11,6 +11,8 @@ no default value
 Can we make this nested without adding all to one parser with . separation?
 Meaning every config adds to the parser
 
+Syntactic sugar with presets?
+
 Print help also in a nested fashion
 """
 import sys as _sys
@@ -30,15 +32,46 @@ class DefaultAction(Action):
         return value[0]
 
 
+class ListAction(Action):
+    def __call__(self, value):
+        return value
+
+
+class StoreTrueAction(Action):
+    def __call__(self, value):
+        return True
+
+
+class StoreFalseAction(Action):
+    def __call__(self, value):
+        return False
+
+
 class Parser(object):
     def __init__(self,
                  prefix_chars='-'):
         self.prefix_chars = prefix_chars
         self._actions = {}
 
-    def add_argument(self, dest, **kwargs):
+    def add_argument(self, dest, type='default', **kwargs):
+        if not dest.startswith('--'):
+            raise ValueError("")
+
         action_name = dest[2:]
-        self._actions[action_name] = DefaultAction(action_name)
+
+        if action_name in self._actions:
+            raise ValueError(f'destination {action_name} exists')
+
+        if type == 'default':
+            self._actions[action_name] = DefaultAction(action_name)
+        elif type == 'list':
+            self._actions[action_name] = ListAction(action_name)
+        elif type == 'store_true':
+            self._actions[action_name] = StoreTrueAction(action_name)
+        elif type == 'store_false':
+            self._actions[action_name] = StoreFalseAction(action_name)
+        else:
+            raise ValueError(f'Unknown type {type}')
 
     def parse_args(self, args=None, namespace=None):
         if args is None:
@@ -48,6 +81,7 @@ class Parser(object):
 
         actions = []
         actions_args = []
+        actions_arg = None
         for i, arg in enumerate(args):
             if arg.startswith('--'):
                 action_name = arg[2:]
@@ -55,10 +89,14 @@ class Parser(object):
                 actions_arg = []
                 actions_args.append(actions_arg)
             else:
+                if actions_arg is None:
+                    raise ValueError(f"Positional keywords are not supported: {actions_arg}")
                 actions_arg.append(arg)
 
         result = {}
         for action_name, action_arg in zip(actions, actions_args):
+            if action_name not in self._actions:
+                raise ValueError(f"Unknown parameter {action_name}")
             action = self._actions[action_name]
             result[action.dest] = action(action_arg)
         return result
