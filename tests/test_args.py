@@ -124,20 +124,6 @@ def test_optional_list_int():
         assert cfg.test == [123, 456]
 
 
-class BoolConfig(BaseConfig):
-    flag_true : bool = False
-    flag_false: bool = True
-
-
-def test_bool_flag():
-    testargs = ["_", "--flag_true", "--flag_false"]
-    with unittest.mock.patch('sys.argv', testargs):
-        kwargs = BoolConfig.parse_cli_args()
-        cfg = BoolConfig(**kwargs)
-        assert cfg.flag_true
-        assert not cfg.flag_false
-
-
 class MasterConfig(SelectConfig):
     pass
 
@@ -165,14 +151,13 @@ class SlaveConfig(MasterConfig):
         pass
 
 
-@pytest.mark.xfail(reason="Not implemented in cli parser")
 def test_select_list_args():
     testargs = ["_", "--test", "3", "4"]
     with unittest.mock.patch('sys.argv', testargs):
         kwargs = MasterConfig.parse_cli_args()
         kwargs.update({'name': 'slave2'})
         cfg = MasterConfig(**kwargs)
-        assert cfg.test == ["3", "4"]
+        assert cfg.test == [3, 4]
 
 
 class UnknownConfig(BaseConfig):
@@ -216,6 +201,9 @@ def test_config_path(tmp_path):
     config = {
         "nested" : {
             "test": 1
+        },
+        "nested2" : {
+            "test": 1
         }
     }
 
@@ -238,7 +226,6 @@ def test_config_path(tmp_path):
         assert cfg.nested2.test == 2
 
 
-@pytest.mark.xfail(reason="Default args in config parser overwrite config")
 def test_overwrite_default_from_config(tmp_path):
     class NestedConfig(BaseConfig):
         test : int = 1

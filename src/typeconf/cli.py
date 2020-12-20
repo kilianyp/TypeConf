@@ -15,7 +15,28 @@ Syntactic sugar with presets?
 
 Print help also in a nested fashion
 """
+import inspect
+from typeconf import BaseConfig
 import sys as _sys
+
+
+def islisttype(cls):
+    from typing import Union
+
+    d = getattr(cls, '__dict__', None)
+    if d is None:
+        return False
+    origin = d.get('__origin__')
+    if origin == list:
+        return True
+    if origin == Union:
+        args = d.get('__args__')
+        if args is None:
+            return False
+        for a in args:
+            if islisttype(a):
+                return True
+    return False
 
 
 class Action(object):
@@ -45,7 +66,7 @@ class Parser(object):
 
     def add_argument(self, dest, type='default', **kwargs):
         if not dest.startswith('--'):
-            raise ValueError("")
+            raise ValueError("Arguments must start with --")
 
         action_name = dest[2:]
 
@@ -85,4 +106,64 @@ class Parser(object):
                 raise ValueError(f"Unknown parameter {action_name}")
             action = self._actions[action_name]
             result[action.dest] = action(action_arg)
-        return result
+
+        return nested2dict(result)
+
+
+    def add_subparser(self, name):
+        pass
+
+
+    @staticmethod
+    def from_config(config):
+        parser = Parser()
+        fields2args(parser, config.__fields__)
+        return parser
+
+
+def fields2args(parser, fields, prefix=''):
+    """
+    Avoids any parsing functionality --> all optional
+
+    args:
+        fields: Pydantic fields
+        parser: ArgumentParser
+    """
+    for key, f in fields.items():
+        if inspect.isclass(f.outer_type_) and issubclass(f.outer_type_, BaseConfig):
+            fields2args(
+                parser,
+                f.outer_type_.__fields__,
+                prefix + f.name + '.')
+            # TODO this is necessary because otherwise
+            # when instantiating the sub config it will complain
+            # AttributeError: _parser
+            # ALternative would be that each class parses it's own arguments
+            f.outer_type_._parser = None
+        else:
+            if islisttype(f.outer_type_):
+                type = "list"
+            else:
+                type = "default"
+            parser.add_argument(f'--{prefix}{f.name}', type=type)
+
+    return parser
+
+def nested2dict(dic):
+    """
+    Converts a dict with keys such as KEY1.KEY2 = VALUE
+    Into a nested dict
+    Filters out unset values
+    """
+    r = {}
+    for key, value in dic.items():
+        depth = key.split('.')
+        cur = r
+        for idx, d in enumerate(depth):
+            if idx == len(depth) - 1:
+                cur[d] = value
+            else:
+                if d not in cur:
+                    cur[d] = {}
+                cur = cur[d]
+    return r
