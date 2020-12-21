@@ -39,6 +39,25 @@ def islisttype(cls):
     return False
 
 
+def istupletype(cls):
+    from typing import Union
+
+    d = getattr(cls, '__dict__', None)
+    if d is None:
+        return False
+    origin = d.get('__origin__')
+    if origin == tuple:
+        return True
+    if origin == Union:
+        args = d.get('__args__')
+        if args is None:
+            return False
+        for a in args:
+            if istupletype(a):
+                return True
+    return False
+
+
 class Action(object):
     def __init__(self,
                  dest):
@@ -141,7 +160,7 @@ def fields2args(parser, fields, prefix=''):
             # ALternative would be that each class parses it's own arguments
             f.outer_type_._parser = None
         else:
-            if islisttype(f.outer_type_):
+            if islisttype(f.outer_type_) or istupletype(f.outer_type_):
                 type = "list"
             else:
                 type = "default"

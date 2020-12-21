@@ -1,6 +1,6 @@
 from typeconf import BaseConfig, SelectConfig
 import unittest.mock
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from pydantic import ValidationError
 import pytest
 import json
@@ -93,6 +93,18 @@ def test_list_int():
         kwargs = ListIntConfig.parse_cli_args()
         cfg = ListIntConfig(**kwargs)
         assert cfg.test == [123, 456]
+
+
+class TupleIntConfig(BaseConfig):
+    test : Tuple[int, int]
+
+
+def test_tuple_int():
+    testargs = ["_", "--test", "123", "456"]
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = TupleIntConfig.parse_cli_args()
+        cfg = TupleIntConfig(**kwargs)
+        assert cfg.test == (123, 456)
 
 
 class OptionalConfig(BaseConfig):
@@ -191,8 +203,6 @@ def test_config_path(tmp_path):
 
     class NestedConfig2(BaseConfig):
         test : int = 1
-
-
 
     class Config(BaseConfig):
         nested : NestedConfig

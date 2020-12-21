@@ -93,6 +93,33 @@ def test_nested_parser():
     args = parser.parse_args(['--test.test', '2'])
     assert args == {"test": {"test": "2"}}
 
+
+def test_istlisttype():
+    from typeconf.cli import islisttype
+    from typing import List, Optional
+
+    assert islisttype(List) == True
+    assert islisttype(List[int]) == True
+    assert islisttype(List[str]) == True
+    assert islisttype(Optional[List]) == True
+    assert islisttype(Optional[List[int]]) == True
+    assert islisttype(str) == False
+    assert islisttype(int) == False
+
+
+def test_isttupletype():
+    from typeconf.cli import istupletype
+    from typing import Tuple, Optional
+
+    assert istupletype(Tuple) == True
+    assert istupletype(Tuple[int]) == True
+    assert istupletype(Tuple[str]) == True
+    assert istupletype(Optional[Tuple]) == True
+    assert istupletype(Optional[Tuple[int]]) == True
+    assert istupletype(str) == False
+    assert istupletype(int) == False
+
+
 def test_istlisttype():
     from typeconf import BaseConfig
     from typeconf.cli import islisttype
