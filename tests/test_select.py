@@ -1,6 +1,6 @@
 from typeconf import BaseConfig, SelectConfig
-from typing import List, Tuple
-from pydantic import ValidationError, create_model
+from typing import List, Optional, Tuple
+from pydantic import ValidationError
 import pytest
 
 
@@ -75,6 +75,20 @@ def test_multi_select():
     }
     with pytest.raises(ValueError):
         config = MultiModel(**cfg)
+
+
+def test_optional_select():
+    class OptionalModel(BaseConfig):
+        model : Optional[MasterConfig]
+
+    cfg = {
+        "model": {
+            "name": "option1",
+        }
+    }
+    config = OptionalModel(**cfg)
+    assert isinstance(config.model, Option1Config)
+    config = OptionalModel(**{})
 
 
 def test_missing_name():

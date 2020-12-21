@@ -79,6 +79,9 @@ class BaseConfig(BaseModel):
         for key, f in cls.__fields__.items():
             if inspect.isclass(f.outer_type_) and issubclass(f.outer_type_, SelectConfig):
                 if key not in cfg:
+                    # can also be optional
+                    if f.allow_none:
+                        continue
                     raise ValueError("%s was not found in cfg" % key)
                 config = f.outer_type_.build_config(cfg[key])
                 # pydantic needs the ellipsis
