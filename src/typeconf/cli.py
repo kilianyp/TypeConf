@@ -18,44 +18,29 @@ Print help also in a nested fashion
 import inspect
 from typeconf import BaseConfig
 import sys as _sys
+import functools
 
 
-def islisttype(cls):
+def isxtype(cls, x):
     from typing import Union
 
     d = getattr(cls, '__dict__', None)
     if d is None:
         return False
     origin = d.get('__origin__')
-    if origin == list:
+    if origin == x:
         return True
     if origin == Union:
         args = d.get('__args__')
         if args is None:
             return False
         for a in args:
-            if islisttype(a):
+            if isxtype(a, x):
                 return True
     return False
 
-
-def istupletype(cls):
-    from typing import Union
-
-    d = getattr(cls, '__dict__', None)
-    if d is None:
-        return False
-    origin = d.get('__origin__')
-    if origin == tuple:
-        return True
-    if origin == Union:
-        args = d.get('__args__')
-        if args is None:
-            return False
-        for a in args:
-            if istupletype(a):
-                return True
-    return False
+islisttype = functools.partial(isxtype, x=list)
+istupletype = functools.partial(isxtype, x=tuple)
 
 
 class Action(object):
