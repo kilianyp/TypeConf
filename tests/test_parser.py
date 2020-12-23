@@ -61,6 +61,15 @@ def test_unused(parser):
     assert args == {}
 
 
+def test_incomplete(parser):
+    parser.add_argument('--test', help="")
+    with pytest.raises(ValueError):
+        args = parser.parse_args(["--test"])
+
+    with pytest.raises(ValueError):
+        args = parser.parse_args(["--test 2 --test2"])
+
+
 def test_positional(parser):
     parser.add_argument('--test', help="")
     with pytest.raises(ValueError):
@@ -89,7 +98,7 @@ def test_nested_parser():
 
 
     parser = Parser.from_config(Config)
-    assert 'test.test' in parser._actions
+    assert 'test' in parser._subparsers
     args = parser.parse_args(['--test.test', '2'])
     assert args == {"test": {"test": "2"}}
 
@@ -121,7 +130,6 @@ def test_isttupletype():
 
 
 def test_istlisttype():
-    from typeconf import BaseConfig
     from typeconf.cli import islisttype
     from typing import List, Optional
 
@@ -132,3 +140,13 @@ def test_istlisttype():
     assert islisttype(Optional[List[int]]) == True
     assert islisttype(str) == False
     assert islisttype(int) == False
+
+
+def test_subparser():
+    parser = Parser()
+    parser.add_argument('--test')
+    subparser = Parser()
+    subparser.add_argument('--test')
+    parser.add_subparser(subparser, 'nested')
+    args = parser.parse_args(['--test', '1', '--nested.test', '2'])
+    assert args == {'test': '1', 'nested': {'test': '2'}}

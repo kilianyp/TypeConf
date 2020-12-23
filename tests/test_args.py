@@ -50,11 +50,20 @@ class NestedConfig(BaseConfig):
     nested : NestedNestedConfig
 
 
+def test_nested():
+    testargs = ["_", "--test", "123", "--nested.test", "456"]
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = NestedConfig.parse_cli_args()
+        cfg = NestedConfig(**kwargs)
+        assert cfg.test == 123
+        assert cfg.nested.test == 456
+
+
 class TestConfig(BaseConfig):
     nested : NestedConfig
 
 
-def test_nested():
+def test_nestednested():
     testargs = ["_", "--nested.test", "123", "--nested.nested.test", "456"]
     with unittest.mock.patch('sys.argv', testargs):
         kwargs = TestConfig.parse_cli_args()
@@ -172,6 +181,16 @@ def test_select_list_args():
         assert cfg.test == [3, 4]
 
 
+@pytest.mark.xfail(reason="Fails because name is not known during cli parsing. Cannot know it's a list.")
+def test_impossible_select_list_args():
+    testargs = ["_", "--test", "3"]
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = MasterConfig.parse_cli_args()
+        kwargs.update({'name': 'slave2'})
+        cfg = MasterConfig(**kwargs)
+        assert cfg.test == [3]
+
+
 class UnknownConfig(BaseConfig):
     pass
 
@@ -258,3 +277,17 @@ def test_overwrite_default_from_config(tmp_path):
         kwargs = Config.parse_cli_args()
         cfg = Config(**kwargs)
         assert cfg.nested.test == 2
+
+
+def test_sorted():
+    class Config(BaseConfig):
+        test1: int
+        test2: int
+        test3: int
+        test0: int
+        a : int
+        b : int
+    keys = []
+    for k, v in Config.__fields__.items():
+        keys.append(k)
+    assert keys == ['test1', 'test2', 'test3', 'test0', 'a', 'b']
