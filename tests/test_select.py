@@ -1,5 +1,5 @@
 from typeconf import BaseConfig, SelectConfig
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from pydantic import ValidationError, create_model
 import pytest
 
@@ -34,21 +34,9 @@ def test_caseinsensitive():
     assert slave2 == Option2Config
 
 
-def test_multi_select():
+def test_list_select():
     class MultiModel(BaseConfig):
-        models : Tuple[Option1Config, Option2Config]
-        """
-        models : List[ModelConfig]
-        def build_config(self, cfg):
-            models = []
-            for model_cfg in cfg['models']:
-                models.append(ModelConfig.build_config(model_cfg))
-            # TODO how to create Tuple type dynamically
-            tuple_type = make_tuple_type(models)
-            return create_model(
-                "MultiModel",
-                models=(tuple_type, ...)
-        """
+        models : List[MasterConfig]
 
     cfg = {
         "models": [
@@ -75,6 +63,51 @@ def test_multi_select():
     }
     with pytest.raises(ValueError):
         config = MultiModel(**cfg)
+
+
+def test_optional_select():
+    class OptionalModel(BaseConfig):
+        model : Optional[MasterConfig]
+
+    cfg = {
+        "model": {
+            "name": "option1",
+        }
+    }
+    config = OptionalModel(**cfg)
+    assert isinstance(config.model, Option1Config)
+    config = OptionalModel(**{})
+
+
+def test_tuple_select():
+    class TupleModel(BaseConfig):
+        models : Tuple[MasterConfig, MasterConfig]
+
+    cfg = {
+        "models": [
+            {
+                "name": "option1",
+            },
+            {
+                "name": "option2",
+            }
+        ]
+    }
+    config = TupleModel(**cfg)
+    assert isinstance(config.models[0], Option1Config)
+    assert isinstance(config.models[1], Option2Config)
+    cfg = {
+        "models": [
+            {
+                "name": "option1",
+            },
+            {
+                "name": "optionXYZ",
+            }
+        ]
+    }
+    with pytest.raises(ValueError):
+        config = TupleModel(**cfg)
 
 
 def test_missing_name():
@@ -192,5 +225,4 @@ def test_alias():
     assert cls == ChildConfig
     cls = ParentConfig.build_config({'name': 'child2'})
     assert cls == ChildConfig
-
 
