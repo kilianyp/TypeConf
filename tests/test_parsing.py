@@ -2,6 +2,7 @@ from typeconf import BaseConfig
 import pytest
 from pydantic import ValidationError
 import unittest.mock
+from typing import Callable
 
 
 class Config(BaseConfig):
@@ -41,3 +42,14 @@ def test_but_no_overlap():
         cfg = Config2(**kwargs)
         assert cfg.test1 == 1
         assert cfg.test2 == 2
+
+
+class ConfigCallable(BaseConfig):
+    fn : Callable
+
+
+def test_callable():
+    import torch
+    fn = torch.relu
+    cfg = ConfigCallable(fn=fn)
+    print(cfg)
