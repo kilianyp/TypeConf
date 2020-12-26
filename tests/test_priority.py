@@ -59,7 +59,7 @@ def test_cli_over_config(tmp_path):
 def test_nested_cli_over_config(tmp_path):
     config = {
         "nested": {
-            "test1": 2
+            "test1": "2"
         }
     }
     cfg_file = tmp_path / "config.json"

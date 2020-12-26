@@ -11,111 +11,6 @@ from typing import Tuple
 logger = logging.getLogger(__name__)
 
 
-def args2dict(dic):
-    """
-    Converts a dict with keys such as KEY1.KEY2 = VALUE
-    Into a nested dict
-    Filters out unset values
-    """
-
-    UNSET_VALUE = None
-
-    r = {}
-    for key, value in dic.items():
-        if value is UNSET_VALUE:
-            continue
-        depth = key.split('.')
-        cur = r
-        for idx, d in enumerate(depth):
-            if idx == len(depth) - 1:
-                cur[d] = value
-            else:
-                if d not in cur:
-                    cur[d] = {}
-                cur = cur[d]
-    return r
-
-
-def list2dict(li):
-    dic = {}
-    name = None
-    for l in li:
-        if l.startswith('--'):
-            name = l[2:]
-        else:
-            if name is None:
-                raise NotImplementedError("Positional arguments are not supported. Please use --")
-            dic[name] = l
-    return dic
-
-
-def fields2args(parser, fields, prefix='', in_select_class=False, choices=[]):
-    """
-    Avoids any parsing functionality --> all optional
-
-    args:
-        fields: Pydantic fields
-        parser: ArgumentParser
-    """
-    for key, f in fields.items():
-        # TODO check for annotation
-        # Work around
-        if not inspect.isclass(f.outer_type_) and f.outer_type_.__origin__ == list:
-            # if its not a class, it's probably an annotation instance
-            nargs = '+'
-        else:
-            nargs = None
-
-        if f.outer_type_ == bool and f.default is not None:
-            if f.default:
-                action = 'store_false'
-            else:
-                action = 'store_true'
-        else:
-            action = None
-
-        if in_select_class and key == "name":
-            parser.add_argument(
-                f'--{prefix}{f.name}',
-                default=f.default,
-                choices=choices
-            )
-        elif inspect.isclass(f.outer_type_) and issubclass(f.outer_type_, BaseConfig):
-            if issubclass(f.outer_type_, SelectConfig):
-                in_select_class = True
-                choices = list(f.outer_type_._registered.keys())
-            else:
-                in_select_class = False
-                choices = []
-            # TODO add groups
-            fields2args(
-                parser,
-                f.outer_type_.__fields__,
-                prefix + f.name + '.',
-                in_select_class,
-                choices=choices)
-            # TODO this is necessary because otherwise
-            # when instantiating the sub config it will complain
-            # AttributeError: _parser
-            # ALternative would be that each class parses it's own arguments
-            f.outer_type_._parser = None
-        else:
-            # TODO for required set special default value that can be ignored later
-            # to get later proper error value
-            if action is not None:
-                parser.add_argument(
-                        f'--{prefix}{f.name}',
-                        default=f.default,
-                        action=action)
-            else:
-                parser.add_argument(
-                        f'--{prefix}{f.name}',
-                        default=f.default,
-                        nargs=nargs)
-
-    return parser
-
-
 def read_file_cfg(path):
     if path.endswith('.json') or path.endswith('.cfg'):
         import json
@@ -202,6 +97,9 @@ class BaseConfig(BaseModel):
         for key, f in cls.__fields__.items():
             if inspect.isclass(f.outer_type_) and issubclass(f.outer_type_, SelectConfig):
                 if key not in cfg:
+                    # can also be optional
+                    if f.allow_none:
+                        continue
                     raise ValueError("%s was not found in cfg" % key)
                 config = f.outer_type_.build_config(cfg[key])
                 # pydantic needs the ellipsis
@@ -218,27 +116,27 @@ class BaseConfig(BaseModel):
 
     @classmethod
     def _create_parser(cls):
-        parser = argparse.ArgumentParser(cls.__name__)
+        from typeconf import cli
+        parser = cli.Parser.from_config(cls)
         parser.add_argument('--config_path')
-        return fields2args(parser, cls.__fields__)
+        return parser
 
     @classmethod
     def parse_cli_args(cls):
         if cls._parser is None:
             cls._parser = cls._create_parser()
-        cli_args, unknown_args = cls._parser.parse_known_args()
-        args = cli_args.__dict__
-        config_path = args.pop('config_path')
+        args = cls._parser.parse_args()
+        config_path = args.get('config_path')
 
         if config_path is not None:
             kwargs = read_file_cfg(config_path)
+            args.pop('config_path')
         else:
             kwargs = {}
 
         # Here needs to be the priority
         # args over cfg
-        partial_dict_update(kwargs, args2dict(args))
-        partial_dict_update(kwargs, list2dict(unknown_args))
+        partial_dict_update(kwargs, args)
         return kwargs
 
 

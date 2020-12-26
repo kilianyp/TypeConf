@@ -1,6 +1,6 @@
 from typeconf import BaseConfig, SelectConfig
 import unittest.mock
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from pydantic import ValidationError
 import pytest
 import json
@@ -50,11 +50,20 @@ class NestedConfig(BaseConfig):
     nested : NestedNestedConfig
 
 
+def test_nested():
+    testargs = ["_", "--test", "123", "--nested.test", "456"]
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = NestedConfig.parse_cli_args()
+        cfg = NestedConfig(**kwargs)
+        assert cfg.test == 123
+        assert cfg.nested.test == 456
+
+
 class TestConfig(BaseConfig):
     nested : NestedConfig
 
 
-def test_nested():
+def test_nestednested():
     testargs = ["_", "--nested.test", "123", "--nested.nested.test", "456"]
     with unittest.mock.patch('sys.argv', testargs):
         kwargs = TestConfig.parse_cli_args()
@@ -95,6 +104,18 @@ def test_list_int():
         assert cfg.test == [123, 456]
 
 
+class TupleIntConfig(BaseConfig):
+    test : Tuple[int, int]
+
+
+def test_tuple_int():
+    testargs = ["_", "--test", "123", "456"]
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = TupleIntConfig.parse_cli_args()
+        cfg = TupleIntConfig(**kwargs)
+        assert cfg.test == (123, 456)
+
+
 class OptionalConfig(BaseConfig):
     test : Optional[str]
 
@@ -124,20 +145,6 @@ def test_optional_list_int():
         assert cfg.test == [123, 456]
 
 
-class BoolConfig(BaseConfig):
-    flag_true : bool = False
-    flag_false: bool = True
-
-
-def test_bool_flag():
-    testargs = ["_", "--flag_true", "--flag_false"]
-    with unittest.mock.patch('sys.argv', testargs):
-        kwargs = BoolConfig.parse_cli_args()
-        cfg = BoolConfig(**kwargs)
-        assert cfg.flag_true
-        assert not cfg.flag_false
-
-
 class MasterConfig(SelectConfig):
     pass
 
@@ -165,14 +172,23 @@ class SlaveConfig(MasterConfig):
         pass
 
 
-@pytest.mark.xfail(reason="Not implemented in cli parser")
 def test_select_list_args():
     testargs = ["_", "--test", "3", "4"]
     with unittest.mock.patch('sys.argv', testargs):
         kwargs = MasterConfig.parse_cli_args()
         kwargs.update({'name': 'slave2'})
         cfg = MasterConfig(**kwargs)
-        assert cfg.test == ["3", "4"]
+        assert cfg.test == [3, 4]
+
+
+@pytest.mark.xfail(reason="Fails because name is not known during cli parsing. Cannot know it's a list.")
+def test_impossible_select_list_args():
+    testargs = ["_", "--test", "3"]
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = MasterConfig.parse_cli_args()
+        kwargs.update({'name': 'slave2'})
+        cfg = MasterConfig(**kwargs)
+        assert cfg.test == [3]
 
 
 class UnknownConfig(BaseConfig):
@@ -207,14 +223,15 @@ def test_config_path(tmp_path):
     class NestedConfig2(BaseConfig):
         test : int = 1
 
-
-
     class Config(BaseConfig):
         nested : NestedConfig
         nested2 : NestedConfig2
 
     config = {
         "nested" : {
+            "test": 1
+        },
+        "nested2" : {
             "test": 1
         }
     }
@@ -238,7 +255,6 @@ def test_config_path(tmp_path):
         assert cfg.nested2.test == 2
 
 
-@pytest.mark.xfail(reason="Default args in config parser overwrite config")
 def test_overwrite_default_from_config(tmp_path):
     class NestedConfig(BaseConfig):
         test : int = 1
@@ -261,3 +277,17 @@ def test_overwrite_default_from_config(tmp_path):
         kwargs = Config.parse_cli_args()
         cfg = Config(**kwargs)
         assert cfg.nested.test == 2
+
+
+def test_sorted():
+    class Config(BaseConfig):
+        test1: int
+        test2: int
+        test3: int
+        test0: int
+        a : int
+        b : int
+    keys = []
+    for k, v in Config.__fields__.items():
+        keys.append(k)
+    assert keys == ['test1', 'test2', 'test3', 'test0', 'a', 'b']

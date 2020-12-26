@@ -1,6 +1,6 @@
 from typeconf import BaseConfig, SelectConfig
-from typing import List, Tuple, Optional
-from pydantic import ValidationError, create_model
+from typing import List, Optional, Tuple
+from pydantic import ValidationError
 import pytest
 
 
