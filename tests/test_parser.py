@@ -2,6 +2,42 @@ from typeconf.cli import Parser
 import pytest
 
 
+def test_to_argdict():
+    args = ["--test", "123", "456", "--test2", "456"]
+    arg_dict = Parser.arglist2dict(args)
+    expected = {
+        "test": ["123", "456"],
+        "test2": ["456"]
+    }
+    assert arg_dict == expected
+
+
+def test_flag():
+    args = ["--test"]
+    with pytest.raises(ValueError):
+        Parser.arglist2dict(args)
+
+
+def test_update_dict():
+    argdict = {}
+    Parser.update_arg_dict(argdict, 'a', None)
+    with pytest.raises(ValueError):
+        Parser.update_arg_dict(argdict, 'a.b', None)
+    Parser.update_arg_dict(argdict, 'b.c.d', None)
+    assert argdict == {"b": {"c": {"d": None}}, "a": None}
+
+
+def test_nested_to_argdict():
+    args = ["--nested.test", "123", "456" ]
+    arg_dict = Parser.arglist2dict(args)
+    expected = {
+        "nested": {
+            "test": ["123", "456"]
+        }
+    }
+    assert arg_dict == expected
+
+
 @pytest.fixture
 def parser():
     return Parser()
@@ -129,19 +165,6 @@ def test_isttupletype():
     assert istupletype(int) == False
 
 
-def test_istlisttype():
-    from typeconf.cli import islisttype
-    from typing import List, Optional
-
-    assert islisttype(List) == True
-    assert islisttype(List[int]) == True
-    assert islisttype(List[str]) == True
-    assert islisttype(Optional[List]) == True
-    assert islisttype(Optional[List[int]]) == True
-    assert islisttype(str) == False
-    assert islisttype(int) == False
-
-
 def test_subparser():
     parser = Parser()
     parser.add_argument('--test')
@@ -150,3 +173,22 @@ def test_subparser():
     parser.add_subparser(subparser, 'nested')
     args = parser.parse_args(['--test', '1', '--nested.test', '2'])
     assert args == {'test': '1', 'nested': {'test': '2'}}
+
+
+def test_nested_select_parser():
+    from typeconf import BaseConfig, SelectConfig
+
+    class ParentConfig(SelectConfig):
+        pass
+
+    @ParentConfig.register('child')
+    class ChildConfig(ParentConfig):
+        test : int = 1
+
+    class Config(BaseConfig):
+        test : ParentConfig
+
+
+    parser = Parser.from_config(Config)
+    args = parser.parse_args(['--test.test', '2'])
+    assert args == {"test": {"test": "2"}}
