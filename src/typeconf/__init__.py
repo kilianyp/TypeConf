@@ -74,6 +74,9 @@ class BaseConfig(BaseModel):
             self._field_access[item] += 1
         return super().__getattribute__(item)
 
+    def __getitem__(self, item):
+        return self.__getattribute__(item)
+
     def get_stats(self) -> Dict[str, int]:
         stats = dict(self._field_access)
 
@@ -195,10 +198,6 @@ class SelectConfig(BaseConfig):
     @classmethod
     def _build_config(cls, cfg):
         return cls
-
-    @abstractmethod
-    def build(self, cfg, *args, **kwargs):
-        pass
 
 from ._version import get_versions
 __version__ = get_versions()['version']

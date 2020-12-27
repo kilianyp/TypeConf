@@ -13,11 +13,11 @@ def test_simple():
 
 
 class Config2(BaseConfig):
-    nested : Config
+    nested : Config = Config()
 
 
 def test_nested():
-    cfg = Config2(**{"nested": {}})
+    cfg = Config2()
     cfg.nested.test
     stats = cfg.get_stats()
     assert stats['nested'] == 1
@@ -30,11 +30,11 @@ def test_nested():
 
 
 class Config3(BaseConfig):
-    nested : Config2
+    nested : Config2 = Config2()
 
 
 def test_nested2():
-    cfg = Config3(**{"nested": {"nested": {}}})
+    cfg = Config3()
     cfg.nested.nested.test
     stats = cfg.get_stats()
     assert stats['nested.nested.test'] == 1
@@ -52,3 +52,10 @@ def test_ununsed():
     cfg.test1
     unused = cfg.find_unused()
     assert unused == {'test2'}
+
+
+def test_access():
+    cfg = Config2()
+    assert cfg.nested.test == 2
+    assert cfg['nested']['test'] == 2
+
