@@ -105,6 +105,21 @@ def fields2args(parser, fields, prefix='', in_select_class=False, choices=[]):
     return parser
 
 
+def resolve(fn):
+    """
+    Resolves the arguments before running
+
+    TODO this is called multiple times, twice per BaseConfig
+    For a nested config, will be called twice everytime for every nesting
+    even though once is enough.
+    """
+    def wrapper(*args, **kwargs):
+        cfg = IRConfig.create(kwargs)
+        cfg = IRConfig.to_container(cfg, resolve=True)
+        return fn(*args, **cfg)
+    return wrapper
+
+
 class BaseConfig(BaseModel):
     """
     https://github.com/samuelcolvin/pydantic/issues/2130
@@ -118,15 +133,13 @@ class BaseConfig(BaseModel):
         underscore_attrs_are_private = True
         extra = Extra.forbid
 
+    @resolve
     def __init__(self, **kwargs):
-        cfg = IRConfig.create(kwargs)
-        cfg = IRConfig.to_container(cfg, resolve=True)
-        super().__init__(**cfg)
+        super().__init__(**kwargs)
 
+    @resolve
     def __new__(cls, **kwargs):
-        cfg = IRConfig.create(kwargs)
-        cfg = IRConfig.to_container(cfg, resolve=True)
-        cls = cls.build_config(cfg)
+        cls = cls.build_config(kwargs)
         obj = super().__new__(cls)
         return obj
 
