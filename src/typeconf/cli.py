@@ -55,6 +55,7 @@ class Action(object):
 
 class DefaultAction(Action):
     def __call__(self, value):
+        # TODO maybe dict?
         return value[0]
 
 
@@ -102,6 +103,9 @@ class Parser(object):
         return self._parse_args(args)
 
     def _parse_args(self, args : dict):
+        """
+        Converts arguments into dictionary.
+        """
         result = {}
         for key, value in args.items():
             if key in self._subparsers:
@@ -113,13 +117,23 @@ class Parser(object):
             elif key in self._actions:
                 result[key] = self._actions[key](value)
             else:
-                raise ValueError("Unknown argument")
+                raise ValueError(f"Unknown argument {key}")
 
         return result
 
-
     @staticmethod
     def arglist2dict(args):
+        """
+        Converts a list of arguments into a dictionary.
+        --test 1
+        --test2 123 123
+        --test3.test 123
+
+        => 
+        test: [1],
+        test2: [123, 123]
+        test3: {test: [123]}
+        """
         arg_dict = {}
 
         if len(args) == 0:
@@ -156,6 +170,9 @@ class Parser(object):
 
     @staticmethod
     def get_args(args):
+        """
+        Returns a list of arguments belonging to the parameter
+        """
         arglist = []
         for idx, arg in enumerate(args):
             if arg.startswith('-'):
