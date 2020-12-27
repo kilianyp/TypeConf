@@ -192,3 +192,13 @@ def test_nested_select_parser():
     parser = Parser.from_config(Config)
     args = parser.parse_args(['--test.test', '2'])
     assert args == {"test": {"test": "2"}}
+
+
+@pytest.mark.xfail(reason="Not supported")
+def test_overwrite_preset():
+    parser = Parser()
+    subparser = Parser()
+    subparser.add_argument('--test')
+    parser.add_subparser(subparser, 'nested')
+    args = parser.parse_args(['--nested.test', '2', '--nested', '${preset:test}'])
+    args = parser.parse_args(['--nested', '${preset:test}', '--nested.test', '2'])

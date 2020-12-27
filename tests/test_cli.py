@@ -291,3 +291,30 @@ def test_sorted():
     for k, v in Config.__fields__.items():
         keys.append(k)
     assert keys == ['test1', 'test2', 'test3', 'test0', 'a', 'b']
+
+
+def test_preset(tmp_path):
+    import os
+    import json
+
+    preset = {
+        "test": 2,
+    }
+
+    class NestedConfig(BaseConfig):
+        test : int = 1
+
+
+    class Config(BaseConfig):
+        nested : NestedConfig
+
+    with open(os.path.join(tmp_path, 'test2.json'), 'w') as f:
+        json.dump(preset, f)
+
+    testargs = ["_", "--presets", str(tmp_path), '--nested', "${preset:test2.json}"]
+
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = Config.parse_cli_args()
+        print(kwargs)
+        cfg = Config(**kwargs)
+        assert cfg.nested.test == 2

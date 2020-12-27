@@ -16,7 +16,8 @@ setuptools.setup(
     url="https://github.com/kilsenp/TypeConf",
     packages=setuptools.find_packages(where="src"),
     install_requires=[
-        'pydantic'
+        'pydantic',
+        'omegaconf'
     ],
     package_dir={'': 'src'},
     classifiers=[

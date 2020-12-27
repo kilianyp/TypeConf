@@ -6,28 +6,26 @@ from abc import abstractmethod
 import logging
 import inspect
 from typing import Tuple
+from .irconfig import IRConfig
+from .utils import read_file_cfg
 
 
 logger = logging.getLogger(__name__)
 
 
-def read_file_cfg(path):
-    if path.endswith('.json') or path.endswith('.cfg'):
-        import json
-        with open(path, 'r') as f:
-            return json.load(f)
-    if path.endswith('.yaml'):
-        # TODO requires extra dependency
-        # TODO maybe use omegaconf
-        raise NotImplementedError
-    if path.endswith('.py'):
-        content = open(path).read()
-        # https://stackoverflow.com/questions/1463306/how-does-exec-work-with-locals
-        ldict = {}
-        exec(content, globals(), ldict)
-        return ldict['cfg']
+def resolve(fn):
+    """
+    Resolves the arguments before running
 
-    raise ValueError("Unknown file format %s" % path)
+    TODO this is called multiple times, twice per BaseConfig
+    For a nested config, will be called twice everytime for every nesting
+    even though once is enough.
+    """
+    def wrapper(*args, **kwargs):
+        cfg = IRConfig.create(kwargs)
+        cfg = IRConfig.to_container(cfg, resolve=True)
+        return fn(*args, **cfg)
+    return wrapper
 
 
 def partial_dict_update(dict1, dict2):
@@ -61,9 +59,11 @@ class BaseConfig(BaseModel):
         underscore_attrs_are_private = True
         extra = Extra.forbid
 
+    @resolve
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    @resolve
     def __new__(cls, **kwargs):
         cls = cls.build_config(kwargs)
         obj = super().__new__(cls)
@@ -119,6 +119,7 @@ class BaseConfig(BaseModel):
         from typeconf import cli
         parser = cli.Parser.from_config(cls)
         parser.add_argument('--config_path')
+        parser.add_argument('--presets')
         return parser
 
     @classmethod
@@ -127,12 +128,18 @@ class BaseConfig(BaseModel):
             cls._parser = cls._create_parser()
         args = cls._parser.parse_args()
         config_path = args.get('config_path')
+        preset_dir = args.get('presets')
 
         if config_path is not None:
             kwargs = read_file_cfg(config_path)
             args.pop('config_path')
         else:
             kwargs = {}
+
+        if preset_dir is not None:
+            from .irconfig import IRConfig
+            IRConfig.register_preset_dir(preset_dir)
+            args.pop('presets')
 
         # Here needs to be the priority
         # args over cfg

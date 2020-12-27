@@ -48,6 +48,7 @@ class ConfigCallable(BaseConfig):
     fn : Callable
 
 
+@pytest.mark.xfail(reason="Not supported by omegaconf")
 def test_callable():
     import torch
     fn = torch.relu

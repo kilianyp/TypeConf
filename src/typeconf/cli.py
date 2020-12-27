@@ -105,7 +105,11 @@ class Parser(object):
         result = {}
         for key, value in args.items():
             if key in self._subparsers:
-                result[key] = self._subparsers[key]._parse_args(value)
+                # if it's a list, it is because it's a preset
+                if isinstance(value, list):
+                    result[key] = value[0]
+                else:
+                    result[key] = self._subparsers[key]._parse_args(value)
             elif key in self._actions:
                 result[key] = self._actions[key](value)
             else:
