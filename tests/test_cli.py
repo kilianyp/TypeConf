@@ -342,3 +342,15 @@ def test_dict_config():
         kwargs = DictConfig.parse_cli_args()
         cfg = DictConfig(**kwargs)
         assert cfg.test == 2
+
+
+def test_wrong_path():
+    testargs = ["_", "--config_path", "xyz.json"]
+    class Config(BaseConfig):
+        pass
+
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = Config.parse_cli_args()
+        cfg = Config(**kwargs)
+
+

@@ -1,8 +1,6 @@
 from collections import defaultdict
-import argparse
 from pydantic import BaseModel, Extra, create_model, ValidationError
 from typing import Dict, ClassVar
-from abc import abstractmethod
 import logging
 import inspect
 from typing import Tuple
@@ -123,15 +121,22 @@ class BaseConfig(BaseModel):
         parser = cli.Parser.from_config(cls)
         parser.add_argument('--config_path')
         parser.add_argument('--presets')
+        parser.add_argument('--system')
         return parser
+
+    @classmethod
+    def register_system_var_from_file(cls, path):
+        IRConfig.register_system_var_from_file(path)
 
     @classmethod
     def parse_cli_args(cls):
         if cls._parser is None:
             cls._parser = cls._create_parser()
         args = cls._parser.parse_args()
+        # Special arguments
         config_path = args.get('config_path')
         preset_dir = args.get('presets')
+        system_path = args.get('system')
 
         if config_path is not None:
             kwargs = read_file_cfg(config_path)
@@ -143,6 +148,12 @@ class BaseConfig(BaseModel):
             from .irconfig import IRConfig
             IRConfig.register_preset_dir(preset_dir)
             args.pop('presets')
+
+        if system_path is not None:
+            from .irconfig import IRConfig
+            IRConfig.register_system_var_from_file(system_path)
+            args.pop('system')
+            print(args)
 
         # Here needs to be the priority
         # args over cfg
