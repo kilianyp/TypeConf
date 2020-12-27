@@ -125,8 +125,6 @@ class BaseConfig(BaseModel):
     """
     https://github.com/samuelcolvin/pydantic/issues/2130
     """
-    preset : str = ""
-
     _field_access = defaultdict(int)
 
     # TODO what happens when using multipe classes
@@ -140,23 +138,9 @@ class BaseConfig(BaseModel):
         super().__init__(**kwargs)
 
     def __new__(cls, **kwargs):
-        # TODO priority, what about keyword args?
-        cls.set_presets(kwargs)
         cls = cls.build_config(kwargs)
         obj = super().__new__(cls)
         return obj
-
-    @classmethod
-    def set_presets(cls, kwargs):
-        for key, value in kwargs.items():
-            if key == 'preset':
-                if value == "unet_pretrained":
-                    kwargs['name'] = "unet"
-                    kwargs['weights'] = "local"
-                    break
-
-            elif isinstance(value, dict):
-                cls.set_presets(value)
 
     def __getattribute__(self, item):
         if not item.startswith('_') and item in self.__fields__:
@@ -204,6 +188,7 @@ class BaseConfig(BaseModel):
     def _create_parser(cls):
         parser = argparse.ArgumentParser(cls.__name__)
         parser.add_argument('--config_path')
+        parser.add_argument('--presets')
         return fields2args(parser, cls.__fields__)
 
     @classmethod
@@ -213,17 +198,26 @@ class BaseConfig(BaseModel):
         cli_args, unknown_args = cls._parser.parse_known_args()
         args = cli_args.__dict__
         config_path = args.pop('config_path')
-        # TODO make this explicit?
+        preset_dir = args.pop('presets')
+
         if config_path is not None:
             kwargs = read_file_cfg(config_path)
         else:
             kwargs = {}
+
+        if preset_dir is not None:
+            from .irconfig import IRConfig
+            IRConfig.register_preset_dir(preset_dir)
 
         # Here needs to be the priority
         # args over cfg
         kwargs.update(args2dict(args))
         r = list2dict(unknown_args)
         kwargs.update(r)
+        # fill in with presets and env?
+        # or even later right before parsing?
+        # maybe better if there exists an mechanism to
+        # load config, presets env explicitly
         return kwargs
 
 
