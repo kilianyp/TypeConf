@@ -1,6 +1,6 @@
 from omegaconf import OmegaConf
 import os
-from . import read_file_cfg
+from .utils import read_file_cfg
 
 
 class IRConfig(OmegaConf):
@@ -19,4 +19,3 @@ class IRConfig(OmegaConf):
         raise ValueError(f"{path} not found in preset paths")
 
 IRConfig.register_resolver("preset", IRConfig.load_preset)
-

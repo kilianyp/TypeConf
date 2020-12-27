@@ -6,6 +6,8 @@ from abc import abstractmethod
 import logging
 import inspect
 from typing import Tuple
+from .irconfig import IRConfig
+from .utils import read_file_cfg
 
 
 logger = logging.getLogger(__name__)
@@ -103,24 +105,6 @@ def fields2args(parser, fields, prefix='', in_select_class=False, choices=[]):
     return parser
 
 
-def read_file_cfg(path):
-    if path.endswith('.json'):
-        import json
-        with open(path, 'r') as f:
-            return json.load(f)
-    if path.endswith('.yaml'):
-        # TODO requires extra dependency
-        raise NotImplementedError
-    if path.endswith('.py'):
-        content = open(path).read()
-        # https://stackoverflow.com/questions/1463306/how-does-exec-work-with-locals
-        ldict = {}
-        exec(content, globals(), ldict)
-        return ldict['cfg']
-
-    raise ValueError("Unknown file format %s" % path)
-
-
 class BaseConfig(BaseModel):
     """
     https://github.com/samuelcolvin/pydantic/issues/2130
@@ -135,10 +119,14 @@ class BaseConfig(BaseModel):
         extra = Extra.forbid
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        cfg = IRConfig.create(kwargs)
+        cfg = IRConfig.to_container(cfg, resolve=True)
+        super().__init__(**cfg)
 
     def __new__(cls, **kwargs):
-        cls = cls.build_config(kwargs)
+        cfg = IRConfig.create(kwargs)
+        cfg = IRConfig.to_container(cfg, resolve=True)
+        cls = cls.build_config(cfg)
         obj = super().__new__(cls)
         return obj
 
