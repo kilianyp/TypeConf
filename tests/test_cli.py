@@ -7,6 +7,18 @@ import json
 import os
 
 
+def test_arglist2dict():
+    from typeconf.cli import Parser
+    args = ["--test", "123", "--foo.bar", "123"]
+
+    result = Parser.arglist2dict(args)
+    expected = {
+        "test": ["123"],
+        "foo": {"bar": ["123"]}
+    }
+    assert result == expected
+
+
 class ConfigOptional(BaseConfig):
     test : int = 1
     test2 : Optional[int]
@@ -315,6 +327,18 @@ def test_preset(tmp_path):
 
     with unittest.mock.patch('sys.argv', testargs):
         kwargs = Config.parse_cli_args()
-        print(kwargs)
         cfg = Config(**kwargs)
         assert cfg.nested.test == 2
+
+
+def test_dict_config():
+    from typing import Dict
+    class DictConfig(BaseConfig):
+        test : Dict
+
+    testargs = ["_", "--test.data", "123"]
+
+    with unittest.mock.patch('sys.argv', testargs):
+        kwargs = DictConfig.parse_cli_args()
+        cfg = DictConfig(**kwargs)
+        assert cfg.test == 2
